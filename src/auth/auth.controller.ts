@@ -15,14 +15,16 @@ import { AuthService } from './auth.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthEmailLoginDto } from './dto/auth-email-login.dto';
 import { AuthForgotPasswordDto } from './dto/auth-forgot-password.dto';
-import { AuthConfirmEmailDto } from './dto/auth-confirm-email.dto';
-import { AuthResetPasswordDto } from './dto/auth-reset-password.dto';
+import { AuthConfirmEmailHashDto } from './dto/auth-confirm-email-hash.dto';
+import { AuthResetPasswordOtpDto } from './dto/auth-reset-password.dto';
 import { AuthUpdateDto } from './dto/auth-update.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { LoginResponseType } from './types/login-response.type';
 import { NullableType } from '../utils/types/nullable.type';
 import { User } from 'src/users/domain/user';
+import { AuthConfirmEmailOtpDto } from './dto/auth-confirm-email-otp.dto';
+import { AuthResendEmailConfirmationDto } from './dto/auth-resed-email-confirmation.dto';
 
 @ApiTags('Auth')
 @Controller({
@@ -45,16 +47,35 @@ export class AuthController {
 
   @Post('email/register')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async register(@Body() createUserDto: AuthRegisterLoginDto): Promise<void> {
+  async register(@Body() createUserDto: AuthRegisterLoginDto): Promise<User> {
     return this.service.register(createUserDto);
   }
 
-  @Post('email/confirm')
+  @Post('email/confirm-hash')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async confirmEmail(
-    @Body() confirmEmailDto: AuthConfirmEmailDto,
+  async confirmEmailHash(
+    @Body() confirmEmailDto: AuthConfirmEmailHashDto,
   ): Promise<void> {
-    return this.service.confirmEmail(confirmEmailDto.hash);
+    return this.service.confirmEmailHash(confirmEmailDto.hash);
+  }
+
+  @Post('email/confirm-otp')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async confirmEmailOTP(
+    @Body() confirmEmailDto: AuthConfirmEmailOtpDto,
+  ): Promise<void> {
+    return this.service.confirmEmailOTP(
+      confirmEmailDto.email,
+      confirmEmailDto.otp,
+    );
+  }
+
+  @Post('email/resend-confirmation')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  resendConfirmationEmailOtp(
+    @Body() resendEmailDto: AuthResendEmailConfirmationDto,
+  ): Promise<void> {
+    return this.service.resendConfirmationEmailOtp(resendEmailDto.email);
   }
 
   @Post('forgot/password')
@@ -62,15 +83,27 @@ export class AuthController {
   async forgotPassword(
     @Body() forgotPasswordDto: AuthForgotPasswordDto,
   ): Promise<void> {
-    return this.service.forgotPassword(forgotPasswordDto.email);
+    return this.service.forgotPasswordOTP(forgotPasswordDto.email);
   }
+
+  // @Post('reset/password')
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // resetPassword(@Body() resetPasswordDto: AuthResetPasswordDto): Promise<void> {
+  //   return this.service.resetPassword(
+  //     resetPasswordDto.hash,
+  //     resetPasswordDto.password,
+  //   );
+  // }
 
   @Post('reset/password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  resetPassword(@Body() resetPasswordDto: AuthResetPasswordDto): Promise<void> {
-    return this.service.resetPassword(
-      resetPasswordDto.hash,
-      resetPasswordDto.password,
+  resetPasswordOtp(
+    @Body() resetPasswordOtpDto: AuthResetPasswordOtpDto,
+  ): Promise<User | null> {
+    return this.service.resetPasswordOtp(
+      resetPasswordOtpDto.email,
+      resetPasswordOtpDto.otp,
+      resetPasswordOtpDto.password,
     );
   }
 

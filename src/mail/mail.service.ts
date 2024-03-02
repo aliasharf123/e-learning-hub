@@ -62,6 +62,64 @@ export class MailService {
     });
   }
 
+  async EmailConfirmation(mailData: MailData<{ otp: string }>): Promise<void> {
+    const i18n = I18nContext.current();
+    let emailConfirmTitle: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+    let text3: MaybeType<string>;
+
+    if (i18n) {
+      [emailConfirmTitle, text1, text2, text3] = await Promise.all([
+        i18n.t('common.confirmEmail'),
+        i18n.t('confirm-email-otp.text1'),
+        i18n.t('confirm-email-otp.text2'),
+        i18n.t('confirm-email-otp.text3'),
+      ]);
+    }
+
+    // const url = new URL(
+    //   this.configService.getOrThrow('app.frontendDomain', {
+    //     infer: true,
+    //   }) + '/confirm-email-otp',
+    // );
+
+    // url.searchParams.set('hash', mailData.data.hash);
+
+    const url = new URL(
+      this.configService.getOrThrow('app.frontendDomain', {
+        infer: true,
+      }) + '/confirm-email-otp',
+    );
+
+    // url.searchParams.set('hash', mailData.data.hash);
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: emailConfirmTitle,
+      text: `${url.toString()} ${emailConfirmTitle}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'activation-otp.hbs',
+      ),
+      context: {
+        title: emailConfirmTitle,
+        url: url.toString(),
+        otp: mailData.data.otp,
+        actionTitle: emailConfirmTitle,
+        app_name: this.configService.get('app.name', { infer: true }),
+        text1,
+        text2,
+        text3,
+      },
+    });
+  }
+
   async forgotPassword(
     mailData: MailData<{ hash: string; tokenExpires: number }>,
   ): Promise<void> {
@@ -107,6 +165,54 @@ export class MailService {
       context: {
         title: resetPasswordTitle,
         url: url.toString(),
+        actionTitle: resetPasswordTitle,
+        app_name: this.configService.get('app.name', {
+          infer: true,
+        }),
+        text1,
+        text2,
+        text3,
+        text4,
+      },
+    });
+  }
+
+  async forgotPasswordOtp(
+    mailData: MailData<{ otp: string; tokenExpires: number }>,
+  ) {
+    const i18n = I18nContext.current();
+    let resetPasswordTitle: MaybeType<string>;
+    let text1: MaybeType<string>;
+    let text2: MaybeType<string>;
+    let text3: MaybeType<string>;
+    let text4: MaybeType<string>;
+
+    if (i18n) {
+      [resetPasswordTitle, text1, text2, text3, text4] = await Promise.all([
+        i18n.t('common.resetPassword'),
+        i18n.t('reset-password-otp.text1'),
+        i18n.t('reset-password-otp.text2'),
+        i18n.t('reset-password-otp.text3'),
+        i18n.t('reset-password-otp.text4'),
+      ]);
+    }
+
+    await this.mailerService.sendMail({
+      to: mailData.to,
+      subject: resetPasswordTitle,
+      text: `${mailData.data.otp} ${resetPasswordTitle}`,
+      templatePath: path.join(
+        this.configService.getOrThrow('app.workingDirectory', {
+          infer: true,
+        }),
+        'src',
+        'mail',
+        'mail-templates',
+        'reset-password-otp.hbs',
+      ),
+      context: {
+        title: resetPasswordTitle,
+        otp: mailData.data.otp,
         actionTitle: resetPasswordTitle,
         app_name: this.configService.get('app.name', {
           infer: true,

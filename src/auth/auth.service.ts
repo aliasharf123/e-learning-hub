@@ -25,6 +25,7 @@ import { User } from 'src/users/domain/user';
 import { Session } from 'src/session/domain/session';
 import { UsersService } from 'src/users/users.service';
 import { SessionService } from 'src/session/session.service';
+import { OtpService } from 'src/otp/otp.service';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,7 @@ export class AuthService {
     private jwtService: JwtService,
     private usersService: UsersService,
     private sessionService: SessionService,
+    private otpService: OtpService,
     private mailService: MailService,
     private configService: ConfigService<AllConfigType>,
   ) {}
@@ -197,7 +199,16 @@ export class AuthService {
     };
   }
 
-  async register(dto: AuthRegisterLoginDto): Promise<void> {
+  async register(dto: AuthRegisterLoginDto): Promise<User> {
+    const otp = await this.otpService.createEmailVerificationToken(dto.email);
+
+    await this.mailService.EmailConfirmation({
+      to: dto.email,
+      data: {
+        otp: otp.emailToken,
+      },
+    });
+
     const user = await this.usersService.create({
       ...dto,
       email: dto.email,
@@ -209,29 +220,31 @@ export class AuthService {
       },
     });
 
-    const hash = await this.jwtService.signAsync(
-      {
-        confirmEmailUserId: user.id,
-      },
-      {
-        secret: this.configService.getOrThrow('auth.confirmEmailSecret', {
-          infer: true,
-        }),
-        expiresIn: this.configService.getOrThrow('auth.confirmEmailExpires', {
-          infer: true,
-        }),
-      },
-    );
+    return user;
 
-    await this.mailService.userSignUp({
-      to: dto.email,
-      data: {
-        hash,
-      },
-    });
+    // const hash = await this.jwtService.signAsync(
+    //   {
+    //     confirmEmailUserId: user.id,
+    //   },
+    //   {
+    //     secret: this.configService.getOrThrow('auth.confirmEmailSecret', {
+    //       infer: true,
+    //     }),
+    //     expiresIn: this.configService.getOrThrow('auth.confirmEmailExpires', {
+    //       infer: true,
+    //     }),
+    //   },
+    // );
+
+    // await this.mailService.userSignUp({
+    //   to: dto.email,
+    //   data: {
+    //     hash,
+    //   },
+    // });
   }
 
-  async confirmEmail(hash: string): Promise<void> {
+  async confirmEmailHash(hash: string): Promise<void> {
     let userId: User['id'];
 
     try {
@@ -277,6 +290,71 @@ export class AuthService {
     await this.usersService.update(user.id, user);
   }
 
+  async confirmEmailOTP(email: string, otp: string): Promise<void> {
+    const user = await this.usersService.findOne({
+      email,
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            email: 'emailNotExists',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const isVerified = await this.otpService.verifyEmailOtp(email, otp);
+
+    if (!isVerified) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            otp: 'invalidOTP',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    user.status = {
+      id: StatusEnum.active,
+    };
+
+    await this.usersService.update(user.id, user);
+  }
+
+  async resendConfirmationEmailOtp(email: string): Promise<void> {
+    const user = await this.usersService.findOne({
+      email,
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            email: 'emailNotExists',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const otp = await this.otpService.createEmailVerificationToken(email);
+
+    await this.mailService.EmailConfirmation({
+      to: email,
+      data: {
+        otp: otp.emailToken,
+      },
+    });
+  }
+
   async forgotPassword(email: string): Promise<void> {
     const user = await this.usersService.findOne({
       email,
@@ -316,6 +394,40 @@ export class AuthService {
       to: email,
       data: {
         hash,
+        tokenExpires,
+      },
+    });
+  }
+
+  async forgotPasswordOTP(email: string): Promise<void> {
+    const user = await this.usersService.findOne({
+      email,
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            email: 'emailNotExists',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const tokenExpiresIn = this.configService.getOrThrow('auth.forgotExpires', {
+      infer: true,
+    });
+
+    const tokenExpires = Date.now() + ms(tokenExpiresIn);
+
+    const otp = await this.otpService.createForgottenPasswordToken(email);
+
+    await this.mailService.forgotPasswordOtp({
+      to: email,
+      data: {
+        otp: otp.newPasswordToken,
         tokenExpires,
       },
     });
@@ -371,6 +483,67 @@ export class AuthService {
     });
 
     await this.usersService.update(user.id, user);
+  }
+
+  async resetPasswordOtp(email: string, otp: string, password: string) {
+    const user = await this.usersService.findOne({
+      email,
+    });
+
+    if (!user) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const isVerified = await this.otpService.verifyForgottenPasswordOtp(
+      email,
+      otp,
+    );
+
+    if (!isVerified) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            otp: 'invalidOTP',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    user.password = password;
+
+    await this.sessionService.softDelete({
+      user: {
+        id: user.id,
+      },
+    });
+
+    return await this.usersService.update(user.id, user);
+  }
+
+  async checkPasswordResetOtp(email: string, otp: string): Promise<void> {
+    const isVerified = await this.otpService.verifyForgottenPasswordOtp(
+      email,
+      otp,
+    );
+
+    if (!isVerified) {
+      throw new HttpException(
+        {
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            otp: 'invalidOTP',
+          },
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
   }
 
   async me(userJwtPayload: JwtPayloadType): Promise<NullableType<User>> {
