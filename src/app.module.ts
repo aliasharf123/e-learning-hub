@@ -31,9 +31,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MongooseConfigService } from './database/mongoose-config.service';
 import { DatabaseConfig } from './database/config/database-config.type';
 import { OtpModule } from './otp/otp.module';
+import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+    }),
+
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -94,6 +100,12 @@ import { OtpModule } from './otp/otp.module';
     MailerModule,
     HomeModule,
     OtpModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
   ],
 })
 export class AppModule {}
