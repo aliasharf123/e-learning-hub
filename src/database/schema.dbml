@@ -1,0 +1,191 @@
+Table User {
+  id serial pk
+  email string
+  password string
+  previousPassword string
+  firstName string
+  middleName string
+  lastName string
+  photoId serial [ref: > FileEntity.id]
+  roleId serial [ref: > Role.id]
+  statusId serial [ref: > Status.id]
+}
+
+Table FileEntity {
+  id string pk
+  path string
+}
+
+Table Role {
+  id serial pk
+  name string
+}
+
+Table Status {
+  id serial pk
+  name string
+}
+
+
+Table Session {
+  id serial pk
+  userId serial [ref: > User.id]
+}
+
+Table StudentInfo {
+  id serial pk
+  userId serial [ref: - User.id]
+
+}
+
+Table Subscription {
+  id serial pk
+  userId serial [ref: > User.id]
+  subjectId serial [ref: > Subject.id]
+  startDate datetime 
+  endDate datetime
+  status SubscriptionStatus
+  
+}
+
+Table GradeLevel {
+  id serial pk
+  name string unique
+  
+}
+
+Table UserGradeLevel {
+  id serial pk
+  userId serial [ref: - User.id]
+  gradeLevelId serial [ref: - GradeLevel.id]
+}
+
+Table Subject {
+  id serial pk
+  name string
+  gradeLevelId serial [ref: > GradeLevel.id]
+}
+
+Table UserSubject {
+  id serial pk
+  userId serial [ref: - User.id]
+  subjectId serial [ref: - Subject.id]
+}
+
+Table Lecture {
+  id serial pk
+  title string
+  description string
+  subjectId serial [ref: - Subject.id]
+}
+
+Table Video {
+  id serial pk
+  title string
+  durationInSeconds integer
+  lectureId serial [ref: > Lecture.id]
+  videoContent serial [ref: - FileEntity.id]
+  videoTranscript serial [ref: - FileEntity.id]
+}
+
+
+Table LectureNotes {
+  id serial pk
+  title string
+  description string
+  type attatchmentType
+  fileEntityId serial [ref: - FileEntity.id]
+}
+
+Table Quiz {
+  id serial pk
+  title string
+  score integer
+  starts_at datetime
+  ends_at datetime
+  active boolean
+  subjectId serial [ref: > Subject.id]
+  LectureId serial [ref: > Lecture.id]
+  videoId serial [ref: > Video.id]
+}
+
+Table QuizQuestion {
+  id serial pk
+  quizId serial [ref: > Quiz.id]
+  active boolean
+  level quizQuestionLevel
+  score integer
+  content string
+}
+
+Table QuizAnswer {
+  id uuid pk
+  quizId uuid [ref: > Quiz.id]
+  questionId uuid [ref: > QuizQuestion.id]
+  correct boolean
+  active boolean
+  content string
+  explaination string
+}
+
+Table QuizTake {
+  id uuid pk
+  quizId uuid [ref: > Quiz.id]
+  userId uuid [ref: > User.id]
+  status quizTakeStatus
+  attemptedAt datetime
+  finishedAt datetime
+}
+
+Table QuizTakeAnswer {
+  id uuid pk
+  quizTakeId uuid [ref: > QuizTake.id]
+  quizQuestionId serial [ref: - QuizQuestion.id]
+  quizAnswerid uuid [ref: > QuizAnswer.id]
+}
+
+Table Chat {
+  id serial pk
+  teacherId serial [ref: - User.id]
+  studentId serial [ref: - User.id]
+}
+
+Table Message {
+  id serial pk
+  chatId serial [ref: > Chat.id]
+  senderId serial [ref: - User.id]
+  recipientId serial [ref: - User.id]
+  type MessageType
+  textContent string
+  audioId serial [ref: - FileEntity.id]
+  videoId serial [ref: - FileEntity.id]
+  pictureId serial [ref: - FileEntity.id]
+  isRead boolean
+  createdAt datetime
+  readAt datetime
+}
+
+enum SubscriptionStatus {
+  Active
+  InActive
+}
+
+enum AttatchmentType {
+  Revision
+  Summary
+}
+
+enum MessageType{
+  Text
+  Audio
+  Video
+  Picture
+}
+
+enum QuizTakeStatus {
+  started
+  paused
+  finished
+  enrolled
+}
+
