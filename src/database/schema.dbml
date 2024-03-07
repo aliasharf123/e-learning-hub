@@ -1,3 +1,6 @@
+// https://dbdiagram.io/d/Learn-Mate-65e5f16ccd45b569fb7c66e1
+
+
 Table User {
   id serial pk
   email string

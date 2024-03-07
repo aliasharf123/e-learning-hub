@@ -33,6 +33,9 @@ import { DatabaseConfig } from './database/config/database-config.type';
 import { OtpModule } from './otp/otp.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SubjectsModule } from './subjects/subjects.module';
+import { GradeLevelsModule } from './grade-levels/grade-levels.module';
+import { LecturesModule } from './lectures/lectures.module';
 
 @Module({
   imports: [
@@ -100,6 +103,9 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     MailerModule,
     HomeModule,
     OtpModule,
+    SubjectsModule,
+    GradeLevelsModule,
+    LecturesModule,
   ],
   providers: [
     {
