@@ -1,10 +1,12 @@
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
+import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
 import { EntityRelationalHelper } from 'src/utils/relational-entity-helper';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -20,6 +22,9 @@ export class GradeLevelEntity extends EntityRelationalHelper {
 
   @OneToMany(() => SubjectEntity, (subject) => subject.gradeLevel)
   subjects: SubjectEntity[];
+
+  @ManyToMany(() => UserEntity, (user) => user.gradeLevels)
+  users: UserEntity[];
 
   @CreateDateColumn()
   createdAt: Date;

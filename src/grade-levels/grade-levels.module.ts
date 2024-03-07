@@ -9,5 +9,6 @@ import { GradeLevelRepository } from './grade-level.repository';
   imports: [TypeOrmModule.forFeature([GradeLevelEntity])],
   controllers: [GradeLevelsController],
   providers: [GradeLevelsService, GradeLevelRepository],
+  exports: [GradeLevelsService],
 })
 export class GradeLevelsModule {}

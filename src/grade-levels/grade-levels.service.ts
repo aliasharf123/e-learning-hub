@@ -30,8 +30,14 @@ export class GradeLevelsService {
     });
   }
 
-  findOne(id: number) {
-    return this.gradeLevelRepository.findOne({ where: { id } });
+  async findOne(id: number) {
+    const gradeLevel = await this.gradeLevelRepository.findOne({
+      where: { id },
+    });
+    if (!gradeLevel) {
+      throw new NotFoundException(`Grade level with id ${id} not found`);
+    }
+    return gradeLevel;
   }
 
   async update(id: number, updateGradeLevelDto: UpdateGradeLevelDto) {

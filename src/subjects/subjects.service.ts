@@ -1,28 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
+import { SubjectRepository } from './subject-repository';
+import { GradeLevelsService } from 'src/grade-levels/grade-levels.service';
+import { IPaginationOptions } from 'src/utils/types/pagination-options';
+import { SubjectEntity } from './entities/subject.entity';
+import { EntityCondition } from 'src/utils/types/entity-condition.type';
+import { FindOptionsWhere } from 'typeorm';
 
 @Injectable()
 export class SubjectsService {
-  create(createSubjectDto: CreateSubjectDto) {
-    console.log('createSubjectDto', createSubjectDto);
-    return 'This action adds a new subject';
+  constructor(
+    private readonly subjectRepository: SubjectRepository,
+    private readonly gradeLevelsService: GradeLevelsService,
+  ) {}
+  async create(createSubjectDto: CreateSubjectDto) {
+    const subject = this.subjectRepository.create(createSubjectDto);
+    subject.gradeLevel = await this.gradeLevelsService.findOne(
+      createSubjectDto.gradeLevelId,
+    );
+    return this.subjectRepository.save(subject);
   }
 
-  findAll() {
-    return `This action returns all subjects`;
+  findManyWithPagination({
+    paginationOptions,
+  }: {
+    paginationOptions: IPaginationOptions;
+  }) {
+    return this.subjectRepository.findManyWithPagination({
+      paginationOptions,
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} subject`;
+  async findOne(fields: EntityCondition<SubjectEntity>) {
+    const subject = await this.subjectRepository.findOne({
+      where: fields as FindOptionsWhere<SubjectEntity>,
+    });
+    if (!subject) {
+      throw new NotFoundException(`Subject with id ${fields.id} not found`);
+    }
+    return subject;
   }
 
-  update(id: number, updateSubjectDto: UpdateSubjectDto) {
-    console.log('updateSubjectDto', updateSubjectDto);
-    return `This action updates a #${id} subject`;
+  async updateSubject(id: number, updateSubjectDto: UpdateSubjectDto) {
+    const subject = await this.subjectRepository.updateSubjectById(
+      id,
+      updateSubjectDto,
+    );
+    return subject;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} subject`;
+  async softDelete(id: number) {
+    await this.subjectRepository.softDelete(id);
   }
 }

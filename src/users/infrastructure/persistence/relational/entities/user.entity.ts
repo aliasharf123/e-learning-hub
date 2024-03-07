@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
@@ -21,6 +22,7 @@ import { AuthProvidersEnum } from 'src/auth/auth-providers.enum';
 import { Exclude, Expose } from 'class-transformer';
 import { User } from '../../../../domain/user';
 import { EnrollmentEntity } from 'src/subjects/entities/enrollment.entity';
+import { GradeLevelEntity } from 'src/grade-levels/entities/grade-level.entity';
 
 @Entity({
   name: 'user',
@@ -81,6 +83,9 @@ export class UserEntity extends EntityRelationalHelper implements User {
 
   @OneToMany(() => EnrollmentEntity, (enrollment) => enrollment.student)
   enrollments: EnrollmentEntity[];
+
+  @ManyToMany(() => GradeLevelEntity, (gradeLevel) => gradeLevel.users)
+  gradeLevels: GradeLevelEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
