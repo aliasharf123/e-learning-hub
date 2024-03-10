@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
-import { SubjectRepository } from './subject-repository';
+import { SubjectRepository } from './subject.repository';
 import { GradeLevelsService } from 'src/grade-levels/grade-levels.service';
 import { IPaginationOptions } from 'src/utils/types/pagination-options';
 import { SubjectEntity } from './entities/subject.entity';
@@ -14,6 +14,7 @@ export class SubjectsService {
     private readonly subjectRepository: SubjectRepository,
     private readonly gradeLevelsService: GradeLevelsService,
   ) {}
+
   async create(createSubjectDto: CreateSubjectDto) {
     const subject = this.subjectRepository.create(createSubjectDto);
     subject.gradeLevel = await this.gradeLevelsService.findOne(
