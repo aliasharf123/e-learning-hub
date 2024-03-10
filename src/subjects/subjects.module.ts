@@ -10,5 +10,6 @@ import { GradeLevelsModule } from 'src/grade-levels/grade-levels.module';
   imports: [GradeLevelsModule, TypeOrmModule.forFeature([SubjectEntity])],
   controllers: [SubjectsController],
   providers: [SubjectsService, SubjectRepository],
+  exports: [SubjectsService],
 })
 export class SubjectsModule {}

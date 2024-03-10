@@ -1,13 +1,5 @@
 import { EntityRelationalHelper } from 'src/utils/relational-entity-helper';
-import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { ExamQuestionEntity } from './exam-question.entity';
 
 @Entity('exam_option')
@@ -24,18 +16,6 @@ export class ExamOptionEntity extends EntityRelationalHelper {
   @Column()
   correct: boolean;
 
-  @Column()
-  explanation: string;
-
-  @Column()
-  active: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @DeleteDateColumn()
-  deletedAt: Date;
+  @Column({ nullable: true })
+  explanation?: string;
 }

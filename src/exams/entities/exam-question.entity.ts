@@ -12,13 +12,13 @@ import {
 import { ExamEntity } from './exam.entity';
 import { ExamOptionEntity } from './exam-option.entity';
 
-enum QuestionDifficulty {
+export enum QuestionDifficulty {
   EASY = 'easy',
   MEDIUM = 'medium',
   HARD = 'hard',
 }
 
-enum QuestionType {
+export enum QuestionType {
   MULTIPLE_CHOICE = 'multiple_choice',
   TRUE_OR_FALSE = 'true_or_false',
 }
@@ -28,6 +28,8 @@ export class ExamQuestionEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  examId: ExamEntity['id'];
   @ManyToOne(() => ExamEntity, (exam) => exam.questions)
   exam: ExamEntity;
 
@@ -46,10 +48,13 @@ export class ExamQuestionEntity extends EntityRelationalHelper {
   @Column()
   points: number;
 
-  @OneToMany(() => ExamOptionEntity, (option) => option.question)
+  @OneToMany(() => ExamOptionEntity, (option) => option.question, {
+    cascade: true,
+    eager: true,
+  })
   options: ExamOptionEntity[];
 
-  @Column()
+  @Column({ default: true })
   active: boolean;
 
   @CreateDateColumn()

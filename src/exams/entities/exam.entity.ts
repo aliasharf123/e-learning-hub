@@ -4,12 +4,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ExamQuestionEntity } from './exam-question.entity';
 import { ExamAttemptEntity } from './exam-attempt.entity';
+import { SubjectEntity } from 'src/subjects/entities/subject.entity';
 
 @Entity('exam')
 export class ExamEntity extends EntityRelationalHelper {
@@ -37,7 +39,10 @@ export class ExamEntity extends EntityRelationalHelper {
   @OneToMany(() => ExamAttemptEntity, (attempt) => attempt.exam)
   attempts: ExamAttemptEntity[];
 
-  @Column()
+  @ManyToOne(() => SubjectEntity, (subject) => subject.exams)
+  subject: SubjectEntity;
+
+  @Column({ default: true })
   active: boolean;
 
   @CreateDateColumn()
