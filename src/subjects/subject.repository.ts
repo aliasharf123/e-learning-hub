@@ -17,9 +17,10 @@ export class SubjectRepository extends Repository<SubjectEntity> {
       subjectRepository.queryRunner,
     );
   }
+
   async createOne(createSubjectDto: CreateSubjectDto): Promise<SubjectEntity> {
     const subject = this.create(createSubjectDto);
-    return await this.save(subject);
+    return this.save(subject);
   }
 
   async findManyWithPagination({
@@ -39,6 +40,6 @@ export class SubjectRepository extends Repository<SubjectEntity> {
       throw new NotFoundException(`Subject with id ${id} not found`);
     }
     this.merge(subject, updateSubjectDto);
-    return await this.save(subject);
+    return this.save(subject);
   }
 }
