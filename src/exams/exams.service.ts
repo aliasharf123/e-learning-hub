@@ -76,4 +76,19 @@ export class ExamsService {
     question.options = options;
     return this.examQuestionRepository.save(question);
   }
+
+  async findQuestionById(examId: number, questionId: number) {
+    await this.examExists(examId);
+    const question = await this.examQuestionRepository.findOne({
+      where: { id: questionId, examId },
+    });
+    if (!question) {
+      throw new NotFoundException(`Question with id ${questionId} not found`);
+    }
+    return question;
+  }
+
+  // async updateQuestion(
+  //   examId: number, questionId: number, updateQuestionDto: ,
+  // )
 }
