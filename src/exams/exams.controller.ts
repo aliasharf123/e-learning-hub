@@ -28,7 +28,7 @@ export class ExamsController {
 
   @Get(':id')
   findOneExam(@Param('id') id: string) {
-    return this.examsService.findOneExam(+id);
+    return this.examsService.findOneExamById(+id);
   }
 
   @Patch(':id')

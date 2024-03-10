@@ -30,7 +30,9 @@ export class ExamQuestionEntity extends EntityRelationalHelper {
 
   @Column()
   examId: ExamEntity['id'];
-  @ManyToOne(() => ExamEntity, (exam) => exam.questions)
+  @ManyToOne(() => ExamEntity, (exam) => exam.questions, {
+    onDelete: 'CASCADE',
+  })
   exam: ExamEntity;
 
   @Column()
@@ -50,6 +52,7 @@ export class ExamQuestionEntity extends EntityRelationalHelper {
 
   @OneToMany(() => ExamOptionEntity, (option) => option.question, {
     cascade: true,
+    onDelete: 'CASCADE',
     eager: true,
   })
   options: ExamOptionEntity[];

@@ -30,7 +30,7 @@ export class ExamsService {
     return this.examRepository.find();
   }
 
-  async findOneExam(id: number) {
+  async findOneExamById(id: number) {
     const exam = await this.examRepository.findOne({ where: { id } });
     if (!exam) {
       throw new NotFoundException(`Exam with id ${id} not found`);
@@ -39,14 +39,23 @@ export class ExamsService {
   }
 
   async updateExam(id: number, updateExamDto: UpdateExamDto) {
-    const exam = await this.findOneExam(id);
+    const exam = await this.findOneExamById(id);
     this.examRepository.merge(exam, updateExamDto);
     return this.examRepository.save(exam);
   }
 
   async softDeleteExam(id: number) {
-    await this.examExists(id);
-    await this.examRepository.softDelete(id);
+    // await this.examExists(id);
+    const exam = await this.examRepository.findOneOrFail({
+      where: { id },
+      relations: {
+        questions: {
+          options: true,
+        },
+      },
+    });
+
+    await this.examRepository.softRemove(exam);
   }
 
   async examExists(id: number) {
@@ -58,7 +67,6 @@ export class ExamsService {
   }
 
   async createQuestion(examId: number, questionDto: CreateExamQuestionDto) {
-    console.log(questionDto.options);
     await this.examExists(examId);
     const question = this.examQuestionRepository.create(questionDto);
     console.log(question);
@@ -66,7 +74,6 @@ export class ExamsService {
 
     const options = this.examOptionRepository.create(questionDto.options);
     question.options = options;
-    console.log('here');
     return this.examQuestionRepository.save(question);
   }
 }

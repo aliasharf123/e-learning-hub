@@ -33,7 +33,10 @@ export class ExamEntity extends EntityRelationalHelper {
   @Column({ nullable: true })
   endDate: Date;
 
-  @OneToMany(() => ExamQuestionEntity, (question) => question.exam)
+  @OneToMany(() => ExamQuestionEntity, (question) => question.exam, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   questions: ExamQuestionEntity[];
 
   @OneToMany(() => ExamAttemptEntity, (attempt) => attempt.exam)
