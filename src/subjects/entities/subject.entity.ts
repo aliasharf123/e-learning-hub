@@ -30,6 +30,7 @@ export class SubjectEntity extends EntityRelationalHelper {
 
   @Column()
   gradeLevelId: number;
+
   @ManyToOne(() => GradeLevelEntity, (gradeLevel) => gradeLevel.subjects)
   @JoinColumn({ name: 'gradeLevelId' })
   gradeLevel: GradeLevelEntity;
