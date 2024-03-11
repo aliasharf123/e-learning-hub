@@ -48,4 +48,34 @@ export class ExamsController {
   ) {
     return this.examsService.createQuestion(+examId, questionDto);
   }
+
+  @Get(':examId/questions')
+  findAllQuestions(@Param('examId') examId: string) {
+    return this.examsService.findAllQuestions(+examId);
+  }
+
+  @Get(':examId/questions/:questionId')
+  findOneQuestion(
+    @Param('examId') examId: string,
+    @Param('questionId') questionId: string,
+  ) {
+    return this.examsService.findQuestionById(+examId, +questionId);
+  }
+
+  @Patch(':examId/questions/:questionId')
+  updateQuestion(
+    @Param('examId') examId: string,
+    @Param('questionId') questionId: string,
+    @Body() questionDto: CreateExamQuestionDto,
+  ) {
+    return this.examsService.updateQuestion(+examId, +questionId, questionDto);
+  }
+
+  @Delete(':examId/questions/:questionId')
+  softDeleteQuestion(
+    @Param('examId') examId: string,
+    @Param('questionId') questionId: string,
+  ) {
+    return this.examsService.softDeleteQuestion(+examId, +questionId);
+  }
 }

@@ -11,7 +11,12 @@ import {
 } from 'typeorm';
 import { ExamEntity } from './exam.entity';
 import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
-import { ExamAttemptChoiceEntity } from './exam-attempt-question.entity';
+import { ExamAttemptChoiceEntity } from './exam-attempt-choice.entity';
+
+enum ExamAttemptStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  FINISHED = 'FINISHED',
+}
 
 @Entity('exam_attempt')
 export class ExamAttemptEntity extends EntityRelationalHelper {
@@ -25,7 +30,10 @@ export class ExamAttemptEntity extends EntityRelationalHelper {
   student: UserEntity;
 
   @OneToMany(() => ExamAttemptChoiceEntity, (choice) => choice.attempt)
-  choices: ExamAttemptChoiceEntity[];
+  choices?: ExamAttemptChoiceEntity[];
+
+  @Column({ default: ExamAttemptStatus.IN_PROGRESS })
+  status: ExamAttemptStatus;
 
   @Column({ default: 0 })
   score: number;

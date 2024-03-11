@@ -6,7 +6,7 @@ import { ExamEntity } from './entities/exam.entity';
 import { ExamQuestionEntity } from './entities/exam-question.entity';
 import { ExamAttemptEntity } from './entities/exam-attempt.entity';
 import { ExamOptionEntity } from './entities/exam-option.entity';
-import { ExamAttemptChoiceEntity } from './entities/exam-attempt-question.entity';
+import { ExamAttemptChoiceEntity } from './entities/exam-attempt-choice.entity';
 import { SubjectsModule } from 'src/subjects/subjects.module';
 
 @Module({

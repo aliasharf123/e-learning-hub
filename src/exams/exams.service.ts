@@ -8,6 +8,7 @@ import { ExamQuestionEntity } from './entities/exam-question.entity';
 import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
 import { ExamOptionEntity } from './entities/exam-option.entity';
 import { SubjectsService } from 'src/subjects/subjects.service';
+import { UpdateExamQuestionDto } from './dto/update-exam-question.dto';
 
 @Injectable()
 export class ExamsService {
@@ -88,7 +89,54 @@ export class ExamsService {
     return question;
   }
 
-  // async updateQuestion(
-  //   examId: number, questionId: number, updateQuestionDto: ,
-  // )
+  async findAllQuestions(examId: number) {
+    await this.examExists(examId);
+    return this.examQuestionRepository.find({ where: { examId } });
+  }
+
+  async updateQuestion(
+    examId: number,
+    questionId: number,
+    updateQuestionDto: UpdateExamQuestionDto,
+  ) {
+    await this.examExists(examId);
+    const question = await this.findQuestionById(examId, questionId);
+    this.examQuestionRepository.merge(question, updateQuestionDto);
+
+    if (updateQuestionDto.options) {
+      const options = this.examOptionRepository.create(
+        updateQuestionDto.options,
+      );
+      question.options = options;
+    }
+    return this.examQuestionRepository.save(question);
+  }
+
+  async softDeleteQuestion(examId: number, questionId: number) {
+    await this.examExists(examId);
+    const question = await this.findQuestionById(examId, questionId);
+    await this.examQuestionRepository.softRemove(question);
+  }
+
+  // async createExamAttempt(examId: number, userId: number) {
+  //   await this.examExists(examId);
+
+  //   // create exam attempt
+  // }
+
+  // async updateQuestionOptions(
+  //   questionId: number,
+  //   updateExamOptionsDto: UpdateExamOptionDto[],
+  // ) {
+  //   const question = await this.examQuestionRepository.findOne({
+  //     where: { id: questionId },
+  //     relations: ['options'],
+  //   });
+  //   if (!question) {
+  //     throw new NotFoundException(`Question with id ${questionId} not found`);
+  //   }
+  //   const options = this.examOptionRepository.create(updateExamOptionsDto);
+  //   question.options = options;
+  //   return this.examQuestionRepository.save(question);
+  // }
 }
