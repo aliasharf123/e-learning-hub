@@ -149,6 +149,25 @@ export class SubscriptionsService {
   //   return `This action updates a #${id} subscription`;
   // }
 
+  async cancelSubscription(id: number) {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.status === SubscriptionStatus.CANCELED) {
+      throw new ConflictException('Subscription already canceled');
+    }
+
+    subscription.status = SubscriptionStatus.CANCELED;
+    subscription.canceledAt = new Date();
+
+    return this.subscriptionRepository.save(subscription);
+  }
+
   async softDeleteSubscription(id: number) {
     await this.subscriptionRepository.softDelete(id);
   }

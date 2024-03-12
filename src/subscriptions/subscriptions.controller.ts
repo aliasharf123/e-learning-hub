@@ -39,6 +39,11 @@ export class SubscriptionsController {
     );
   }
 
+  @Post('cancel')
+  cancelSubscription(@Param('id') id: string) {
+    return this.subscriptionsService.cancelSubscription(+id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.subscriptionsService.softDeleteSubscription(+id);
