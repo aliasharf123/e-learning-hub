@@ -30,6 +30,7 @@ import { SubjectsModule } from './subjects/subjects.module';
 import { GradeLevelsModule } from './grade-levels/grade-levels.module';
 import { LecturesModule } from './lectures/lectures.module';
 import { ExamsModule } from './exams/exams.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { ExamsModule } from './exams/exams.module';
     GradeLevelsModule,
     LecturesModule,
     ExamsModule,
+    SubscriptionsModule,
   ],
   providers: [
     {

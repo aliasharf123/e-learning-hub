@@ -16,6 +16,7 @@ import { EnrollmentEntity } from './enrollment.entity';
 import { LectureEntity } from 'src/lectures/entities/lecture.entity';
 import { FileEntity } from 'src/files/infrastructure/persistence/relational/entities/file.entity';
 import { ExamEntity } from 'src/exams/entities/exam.entity';
+import { SubscriptionEntity } from 'src/subscriptions/entities/subscription.entity';
 
 @Entity('subject')
 export class SubjectEntity extends EntityRelationalHelper {
@@ -44,6 +45,9 @@ export class SubjectEntity extends EntityRelationalHelper {
 
   @OneToMany(() => ExamEntity, (exam) => exam.subject)
   exams: ExamEntity[];
+
+  @OneToMany(() => SubscriptionEntity, (subscription) => subscription.subject)
+  subscriptions: SubscriptionEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
