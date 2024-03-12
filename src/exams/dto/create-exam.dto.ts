@@ -53,6 +53,14 @@ export class CreateExamDto {
   endDate: Date;
 
   @ApiProperty({
+    description: 'Duration of the exam in minutes',
+    example: 120,
+  })
+  @IsPositive()
+  @IsNotEmpty()
+  durationInMinutes: number;
+
+  @ApiProperty({
     description: 'Subject of the exam',
     example: 1,
   })

@@ -35,6 +35,9 @@ export class ExamAttemptEntity extends EntityRelationalHelper {
   @Column({ default: ExamAttemptStatus.IN_PROGRESS })
   status: ExamAttemptStatus;
 
+  @Column({ nullable: true })
+  endsAt?: Date;
+
   @Column({ default: 0 })
   score: number;
 

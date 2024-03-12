@@ -28,10 +28,13 @@ export class ExamEntity extends EntityRelationalHelper {
   score: number;
 
   @Column({ nullable: true })
-  startDate: Date;
+  startDate?: Date;
 
   @Column({ nullable: true })
-  endDate: Date;
+  endDate?: Date;
+
+  @Column({ nullable: true })
+  durationInMinutes?: number;
 
   @OneToMany(() => ExamQuestionEntity, (question) => question.exam, {
     cascade: true,

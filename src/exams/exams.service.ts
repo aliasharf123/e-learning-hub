@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { ExamEntity } from './entities/exam.entity';
@@ -9,6 +13,9 @@ import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
 import { ExamOptionEntity } from './entities/exam-option.entity';
 import { SubjectsService } from 'src/subjects/subjects.service';
 import { UpdateExamQuestionDto } from './dto/update-exam-question.dto';
+import { SubjectEntity } from 'src/subjects/entities/subject.entity';
+import { UsersService } from 'src/users/users.service';
+import { ExamAttemptEntity } from './entities/exam-attempt.entity';
 
 @Injectable()
 export class ExamsService {
@@ -19,16 +26,29 @@ export class ExamsService {
     private examQuestionRepository: Repository<ExamQuestionEntity>,
     @InjectRepository(ExamOptionEntity)
     private examOptionRepository: Repository<ExamOptionEntity>,
+    @InjectRepository(ExamAttemptEntity)
+    private examAttemptRepository: Repository<ExamAttemptEntity>,
     private subjectService: SubjectsService,
+    private usersService: UsersService,
   ) {}
 
-  createExam(createExamDto: CreateExamDto) {
+  async createExam(createExamDto: CreateExamDto) {
+    const subject = await this.subjectService.findOne({
+      id: createExamDto.subjectId,
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
     const exam = this.examRepository.create(createExamDto);
+    exam.subject = subject;
+
     return this.examRepository.save(exam);
   }
 
-  findAllExams() {
-    return this.examRepository.find();
+  findAllExamsbySubject(subjectId: SubjectEntity['id']) {
+    return this.examRepository.find({ where: { subject: { id: subjectId } } });
   }
 
   async findOneExamById(id: number) {
@@ -118,11 +138,36 @@ export class ExamsService {
     await this.examQuestionRepository.softRemove(question);
   }
 
-  // async createExamAttempt(examId: number, userId: number) {
-  //   await this.examExists(examId);
+  async createExamAttempt(examId: number, studentId: number) {
+    const exam = await this.examRepository.findOne({ where: { id: examId } });
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+    if (exam.startDate && exam.startDate > new Date()) {
+      throw new BadRequestException('Exam has not started yet');
+    }
+    if (exam.endDate && exam.endDate < new Date()) {
+      throw new BadRequestException('Exam has ended');
+    }
 
-  //   // create exam attempt
-  // }
+    const attempt = await this.examAttemptRepository.findOne({
+      where: { exam: { id: examId }, student: { id: studentId } },
+    });
+    if (attempt?.endsAt && attempt.endsAt < new Date()) {
+      throw new BadRequestException('You have already attempted this exam');
+    }
+
+    // if (exam.durationInMinutes) {
+    //   exam.endsAt = new Date(Date.now() + exam.durationInMinutes * 60000);
+    // }
+
+    const user = await this.usersService.findOne({ id: studentId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // create exam attempt
+  }
 
   // async updateQuestionOptions(
   //   questionId: number,
