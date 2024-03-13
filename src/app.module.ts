@@ -29,7 +29,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SubjectsModule } from './subjects/subjects.module';
 import { GradeLevelsModule } from './grade-levels/grade-levels.module';
 import { LecturesModule } from './lectures/lectures.module';
-import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -91,7 +90,6 @@ import { ChatModule } from './chat/chat.module';
     SubjectsModule,
     GradeLevelsModule,
     LecturesModule,
-    ChatModule,
   ],
   providers: [
     {

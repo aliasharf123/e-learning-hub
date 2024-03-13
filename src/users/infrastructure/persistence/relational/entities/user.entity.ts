@@ -21,6 +21,8 @@ import { AuthProvidersEnum } from 'src/auth/auth-providers.enum';
 import { Exclude, Expose } from 'class-transformer';
 import { User } from '../../../../domain/user';
 import { GradeLevelEntity } from 'src/grade-levels/entities/grade-level.entity';
+import { ExamAttemptEntity } from 'src/exams/entities/exam-attempt.entity';
+import { SubscriptionEntity } from 'src/subscriptions/entities/subscription.entity';
 
 @Entity({
   name: 'user',
@@ -81,6 +83,12 @@ export class UserEntity extends EntityRelationalHelper implements User {
 
   @ManyToMany(() => GradeLevelEntity, (gradeLevel) => gradeLevel.users)
   gradeLevels: GradeLevelEntity[];
+
+  @OneToMany(() => ExamAttemptEntity, (attempt) => attempt.student)
+  examAttempts: ExamAttemptEntity[];
+
+  @OneToMany(() => SubscriptionEntity, (subscription) => subscription.student)
+  subscriptions: SubscriptionEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
