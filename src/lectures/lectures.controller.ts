@@ -24,6 +24,7 @@ export class LecturesController {
 
   @Get()
   findAll(@Param('subjectId') subjectId: string) {
+    console.log(subjectId);
     return this.lecturesService.findAll();
   }
 
