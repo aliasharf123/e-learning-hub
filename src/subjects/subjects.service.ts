@@ -7,6 +7,7 @@ import { IPaginationOptions } from 'src/utils/types/pagination-options';
 import { SubjectEntity } from './entities/subject.entity';
 import { EntityCondition } from 'src/utils/types/entity-condition.type';
 import { FindOptionsWhere } from 'typeorm';
+import { QueryOptionsDto } from './dto/query-options.dto';
 
 @Injectable()
 export class SubjectsService {
@@ -23,14 +24,20 @@ export class SubjectsService {
     return this.subjectRepository.save(subject);
   }
 
-  findManyWithPagination({
-    paginationOptions,
-  }: {
-    paginationOptions: IPaginationOptions;
-  }) {
-    return this.subjectRepository.findManyWithPagination({
+  findManyWithPagination(
+    {
       paginationOptions,
-    });
+    }: {
+      paginationOptions: IPaginationOptions;
+    },
+    queryOptions: QueryOptionsDto,
+  ) {
+    return this.subjectRepository.findManyWithPagination(
+      {
+        paginationOptions,
+      },
+      queryOptions,
+    );
   }
 
   async findOne(fields: EntityCondition<SubjectEntity>) {

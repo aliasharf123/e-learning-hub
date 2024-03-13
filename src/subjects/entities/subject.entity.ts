@@ -12,7 +12,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EnrollmentEntity } from './enrollment.entity';
 import { LectureEntity } from 'src/lectures/entities/lecture.entity';
 import { FileEntity } from 'src/files/infrastructure/persistence/relational/entities/file.entity';
 
@@ -34,9 +33,6 @@ export class SubjectEntity extends EntityRelationalHelper {
   @ManyToOne(() => GradeLevelEntity, (gradeLevel) => gradeLevel.subjects)
   @JoinColumn({ name: 'gradeLevelId' })
   gradeLevel: GradeLevelEntity;
-
-  @OneToMany(() => EnrollmentEntity, (enrollment) => enrollment.subject)
-  enrollments: EnrollmentEntity[];
 
   @OneToMany(() => LectureEntity, (lecture) => lecture.subject)
   lectures: LectureEntity[];

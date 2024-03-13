@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { LecturesService } from './lectures.service';
 import { CreateLectureDto } from './dto/create-lecture.dto';
 import { UpdateLectureDto } from './dto/update-lecture.dto';
+import { ApiTags } from '@nestjs/swagger';
 
-@Controller('lectures')
+@ApiTags('Lecture')
+@Controller('subject/:subjectId/lectures')
 export class LecturesController {
   constructor(private readonly lecturesService: LecturesService) {}
 
@@ -13,7 +23,7 @@ export class LecturesController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Param('subjectId') subjectId: string) {
     return this.lecturesService.findAll();
   }
 

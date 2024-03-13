@@ -5,6 +5,7 @@ import { CreateSubjectDto } from './dto/create-subject.dto';
 import { IPaginationOptions } from 'src/utils/types/pagination-options';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { NotFoundException } from '@nestjs/common';
+import { QueryOptionsDto } from './dto/query-options.dto';
 
 export class SubjectRepository extends Repository<SubjectEntity> {
   constructor(
@@ -23,14 +24,21 @@ export class SubjectRepository extends Repository<SubjectEntity> {
     return this.save(subject);
   }
 
-  async findManyWithPagination({
-    paginationOptions,
-  }: {
-    paginationOptions: IPaginationOptions;
-  }): Promise<SubjectEntity[]> {
+  async findManyWithPagination(
+    {
+      paginationOptions,
+    }: {
+      paginationOptions: IPaginationOptions;
+    },
+    queryOptions: QueryOptionsDto,
+  ): Promise<SubjectEntity[]> {
     return this.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
       take: paginationOptions.limit,
+      where: queryOptions,
+      relations: {
+        lectures: queryOptions.includeLessons,
+      },
     });
   }
 
