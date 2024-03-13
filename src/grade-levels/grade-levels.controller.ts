@@ -15,7 +15,9 @@ import { GradeLevelEntity } from './entities/grade-level.entity';
 import { InfinityPaginationResultType } from 'src/utils/types/infinity-pagination-result.type';
 import { QueryGradeLevelDto } from './dto/query-grade-level.dto';
 import { infinityPagination } from 'src/utils/infinity-pagination';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Grade Levels')
 @Controller('grade-levels')
 export class GradeLevelsController {
   constructor(private readonly gradeLevelsService: GradeLevelsService) {}
