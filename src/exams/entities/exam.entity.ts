@@ -28,13 +28,17 @@ export class ExamEntity extends EntityRelationalHelper {
   score: number;
 
   @Column({ nullable: true })
-  startDate?: Date;
+  startsAt?: Date;
 
   @Column({ nullable: true })
-  endDate?: Date;
+  endsAt?: Date;
 
+  // in case of a timed exam that does not have a specific start and end date
   @Column({ nullable: true })
   durationInMinutes?: number;
+
+  @Column({ default: false })
+  enableAfterEndTime: boolean;
 
   @OneToMany(() => ExamQuestionEntity, (question) => question.exam, {
     cascade: true,

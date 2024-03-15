@@ -36,15 +36,46 @@ export class ExamsService {
     const subject = await this.subjectService.findOne({
       id: createExamDto.subjectId,
     });
+    const exam = this.examRepository.create(createExamDto);
+    exam.subject = subject;
 
     if (!subject) {
       throw new NotFoundException('Subject not found');
     }
 
-    const exam = this.examRepository.create(createExamDto);
-    exam.subject = subject;
+    if (createExamDto.startsAt && createExamDto.endsAt) {
+      if (createExamDto.startsAt > createExamDto.endsAt) {
+        throw new BadRequestException('Start date cannot be after end date');
+      }
+
+      if (createExamDto.startsAt < new Date()) {
+        throw new BadRequestException('Start date cannot be in the past');
+      }
+
+      if (createExamDto.endsAt < new Date()) {
+        throw new BadRequestException('End date cannot be in the past');
+      }
+
+      if (createExamDto.startsAt === createExamDto.endsAt) {
+        throw new BadRequestException(
+          'Start date and end date cannot be equal',
+        );
+      }
+
+      if (createExamDto.startsAt > new Date()) {
+        exam.active = false;
+      }
+    }
+
+    if (!exam.startsAt || !exam.endsAt) {
+      throw new BadRequestException('You must Provide both start and end date');
+    }
 
     return this.examRepository.save(exam);
+  }
+
+  findAllExams() {
+    return this.examRepository.find();
   }
 
   findAllExamsbySubject(subjectId: SubjectEntity['id']) {
@@ -143,10 +174,10 @@ export class ExamsService {
     if (!exam) {
       throw new NotFoundException('Exam not found');
     }
-    if (exam.startDate && exam.startDate > new Date()) {
+    if (exam.startsAt && exam.startsAt > new Date()) {
       throw new BadRequestException('Exam has not started yet');
     }
-    if (exam.endDate && exam.endDate < new Date()) {
+    if (exam.endsAt && exam.endsAt < new Date()) {
       throw new BadRequestException('Exam has ended');
     }
 

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
+  IsOptional,
   IsPositive,
   IsString,
   MaxLength,
@@ -42,22 +43,23 @@ export class CreateExamDto {
     description: 'Start date and time of the exam',
     example: '2024-10-20T14:00:00.000Z',
   })
-  @IsNotEmpty()
-  startDate: Date;
+  @IsOptional()
+  startsAt?: Date;
 
   @ApiProperty({
     description: 'End date and time of the exam',
     example: '2024-10-20T16:00:00.000Z',
   })
-  @IsNotEmpty()
-  endDate: Date;
+  @IsOptional()
+  endsAt?: Date;
 
   @ApiProperty({
     description: 'Duration of the exam in minutes',
     example: 120,
   })
   @IsPositive()
-  @IsNotEmpty()
+  @Min(1)
+  @IsOptional()
   durationInMinutes: number;
 
   @ApiProperty({
@@ -67,9 +69,9 @@ export class CreateExamDto {
   @IsNotEmpty()
   subjectId: SubjectEntity['id'];
 
-  @ApiProperty({
-    description: 'Active status of the exam',
-    example: true,
-  })
-  active: boolean;
+  // @ApiProperty({
+  //   description: 'Active status of the exam',
+  //   example: true,
+  // })
+  // active: boolean;
 }
