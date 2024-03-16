@@ -8,7 +8,10 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 import { ExamEntity } from './entities/exam.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ExamQuestionEntity } from './entities/exam-question.entity';
+import {
+  ExamQuestionEntity,
+  QuestionType,
+} from './entities/exam-question.entity';
 import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
 import { ExamOptionEntity } from './entities/exam-option.entity';
 import { SubjectsService } from 'src/subjects/subjects.service';
@@ -98,7 +101,7 @@ export class ExamsService {
 
   async softDeleteExam(id: number) {
     // await this.examExists(id);
-    const exam = await this.examRepository.findOneOrFail({
+    const exam = await this.examRepository.findOne({
       where: { id },
       relations: {
         questions: {
@@ -106,6 +109,10 @@ export class ExamsService {
         },
       },
     });
+
+    if (!exam) {
+      throw new NotFoundException(`Exam with id ${id} not found`);
+    }
 
     await this.examRepository.softRemove(exam);
   }
@@ -121,9 +128,36 @@ export class ExamsService {
   async createQuestion(examId: number, questionDto: CreateExamQuestionDto) {
     await this.examExists(examId);
     const question = this.examQuestionRepository.create(questionDto);
-    console.log(question);
     question.examId = examId;
 
+    if (questionDto.type === QuestionType.TRUE_OR_FALSE) {
+      if (questionDto.options.length !== 2) {
+        throw new BadRequestException(
+          'True or false question must have 2 options',
+        );
+      }
+      if (questionDto.options[0].correct === questionDto.options[1].correct) {
+        throw new BadRequestException(
+          'True or false question must have one correct and one incorrect option',
+        );
+      }
+
+      questionDto.options.forEach((option) => {
+        option.value = option.value.toLowerCase();
+      });
+
+      if (
+        !questionDto.options.some((option) => option.value === 'true') ||
+        !questionDto.options.some((option) => option.value === 'false')
+      ) {
+        throw new BadRequestException(
+          'True or false question must have one option with value true and one with value false',
+        );
+      }
+    }
+    if (questionDto.options.length < 2) {
+      throw new BadRequestException('Question must have at least 2 options');
+    }
     const options = this.examOptionRepository.create(questionDto.options);
     question.options = options;
     return this.examQuestionRepository.save(question);
@@ -140,7 +174,7 @@ export class ExamsService {
     return question;
   }
 
-  async findAllQuestions(examId: number) {
+  async findAllQuestionsByExamId(examId: number) {
     await this.examExists(examId);
     return this.examQuestionRepository.find({ where: { examId } });
   }

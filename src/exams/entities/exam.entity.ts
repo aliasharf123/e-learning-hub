@@ -40,6 +40,9 @@ export class ExamEntity extends EntityRelationalHelper {
   @Column({ default: false })
   enableAfterEndTime: boolean;
 
+  @Column({ default: false })
+  revealAnswersAtEnd: boolean;
+
   @OneToMany(() => ExamQuestionEntity, (question) => question.exam, {
     cascade: true,
     onDelete: 'CASCADE',

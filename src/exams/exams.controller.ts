@@ -57,8 +57,8 @@ export class ExamsController {
   }
 
   @Get(':examId/questions')
-  findAllQuestions(@Param('examId') examId: string) {
-    return this.examsService.findAllQuestions(+examId);
+  findAllQuestionsByExamId(@Param('examId') examId: string) {
+    return this.examsService.findAllQuestionsByExamId(+examId);
   }
 
   @Get(':examId/questions/:questionId')

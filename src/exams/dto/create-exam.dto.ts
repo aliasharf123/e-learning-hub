@@ -63,6 +63,20 @@ export class CreateExamDto {
   durationInMinutes: number;
 
   @ApiProperty({
+    description: 'Enable after end time',
+    example: false,
+  })
+  @IsOptional()
+  enableAfterEndTime?: boolean;
+
+  @ApiProperty({
+    description: 'Reveal answers at end',
+    example: false,
+  })
+  @IsOptional()
+  revealAnswersAtEnd?: boolean;
+
+  @ApiProperty({
     description: 'Subject of the exam',
     example: 1,
   })
