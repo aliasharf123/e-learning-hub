@@ -30,7 +30,7 @@ export class ExamAttemptEntity extends EntityRelationalHelper {
   student: UserEntity;
 
   @OneToMany(() => ExamAttemptChoiceEntity, (choice) => choice.attempt)
-  choices?: ExamAttemptChoiceEntity[];
+  choices: ExamAttemptChoiceEntity[];
 
   @Column({ default: ExamAttemptStatus.IN_PROGRESS })
   status: ExamAttemptStatus;

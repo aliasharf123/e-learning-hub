@@ -47,24 +47,7 @@ export class ExamsService {
     }
 
     if (createExamDto.startsAt && createExamDto.endsAt) {
-      if (createExamDto.startsAt > createExamDto.endsAt) {
-        throw new BadRequestException('Start date cannot be after end date');
-      }
-
-      if (createExamDto.startsAt < new Date()) {
-        throw new BadRequestException('Start date cannot be in the past');
-      }
-
-      if (createExamDto.endsAt < new Date()) {
-        throw new BadRequestException('End date cannot be in the past');
-      }
-
-      if (createExamDto.startsAt === createExamDto.endsAt) {
-        throw new BadRequestException(
-          'Start date and end date cannot be equal',
-        );
-      }
-
+      this.validateExamDates(createExamDto.startsAt, createExamDto.endsAt);
       if (createExamDto.startsAt > new Date()) {
         exam.active = false;
       }
@@ -75,6 +58,24 @@ export class ExamsService {
     }
 
     return this.examRepository.save(exam);
+  }
+
+  validateExamDates(startsAt: Date, endsAt: Date) {
+    if (startsAt > endsAt) {
+      throw new BadRequestException('Start date cannot be after end date');
+    }
+
+    if (startsAt < new Date()) {
+      throw new BadRequestException('Start date cannot be in the past');
+    }
+
+    if (endsAt < new Date()) {
+      throw new BadRequestException('End date cannot be in the past');
+    }
+
+    if (startsAt === endsAt) {
+      throw new BadRequestException('Start date and end date cannot be equal');
+    }
   }
 
   findAllExams() {
@@ -96,6 +97,9 @@ export class ExamsService {
   async updateExam(id: number, updateExamDto: UpdateExamDto) {
     const exam = await this.findOneExamById(id);
     this.examRepository.merge(exam, updateExamDto);
+    if (exam.startsAt && exam.endsAt) {
+      this.validateExamDates(exam.startsAt, exam.endsAt);
+    }
     return this.examRepository.save(exam);
   }
 
@@ -125,40 +129,73 @@ export class ExamsService {
     return exists;
   }
 
+  validateTrueOrFalseQuestionOptions(options: ExamOptionEntity[]) {
+    if (options.length !== 2) {
+      throw new BadRequestException(
+        'True or false question must have 2 options',
+      );
+    }
+    if (options[0].correct === options[1].correct) {
+      throw new BadRequestException(
+        'True or false question must have one correct and one incorrect option',
+      );
+    }
+
+    options.forEach((option) => {
+      option.value = option.value.toLowerCase();
+    });
+
+    if (
+      !options.some((option) => option.value === 'true') ||
+      !options.some((option) => option.value === 'false')
+    ) {
+      throw new BadRequestException(
+        'True or false question must have one option with value true and one with value false',
+      );
+    }
+  }
+
+  validateMultipleChoiceQuestionOptions(options: ExamOptionEntity[]) {
+    if (options.length < 2) {
+      throw new BadRequestException(
+        'Multiple choice question must have 2 options',
+      );
+    }
+    const correctOptions = options.filter((option) => option.correct);
+    if (correctOptions.length < 1) {
+      throw new BadRequestException(
+        'Multiple choice question must have at least one correct option',
+      );
+    }
+  }
+
+  validateQuestionOptions(
+    questionType: QuestionType,
+    options: ExamOptionEntity[],
+  ) {
+    if (questionType === QuestionType.TRUE_OR_FALSE) {
+      this.validateTrueOrFalseQuestionOptions(options);
+    }
+    this.validateMultipleChoiceQuestionOptions(options);
+  }
+
+  createQuestionOptions(
+    questionType: QuestionType,
+    options: ExamOptionEntity[],
+  ) {
+    this.validateQuestionOptions(questionType, options);
+    return this.examOptionRepository.create(options);
+  }
+
   async createQuestion(examId: number, questionDto: CreateExamQuestionDto) {
     await this.examExists(examId);
     const question = this.examQuestionRepository.create(questionDto);
     question.examId = examId;
 
-    if (questionDto.type === QuestionType.TRUE_OR_FALSE) {
-      if (questionDto.options.length !== 2) {
-        throw new BadRequestException(
-          'True or false question must have 2 options',
-        );
-      }
-      if (questionDto.options[0].correct === questionDto.options[1].correct) {
-        throw new BadRequestException(
-          'True or false question must have one correct and one incorrect option',
-        );
-      }
-
-      questionDto.options.forEach((option) => {
-        option.value = option.value.toLowerCase();
-      });
-
-      if (
-        !questionDto.options.some((option) => option.value === 'true') ||
-        !questionDto.options.some((option) => option.value === 'false')
-      ) {
-        throw new BadRequestException(
-          'True or false question must have one option with value true and one with value false',
-        );
-      }
-    }
-    if (questionDto.options.length < 2) {
-      throw new BadRequestException('Question must have at least 2 options');
-    }
-    const options = this.examOptionRepository.create(questionDto.options);
+    const options = this.createQuestionOptions(
+      questionDto.type,
+      questionDto.options,
+    );
     question.options = options;
     return this.examQuestionRepository.save(question);
   }
@@ -189,7 +226,8 @@ export class ExamsService {
     this.examQuestionRepository.merge(question, updateQuestionDto);
 
     if (updateQuestionDto.options) {
-      const options = this.examOptionRepository.create(
+      const options = this.createQuestionOptions(
+        question.type,
         updateQuestionDto.options,
       );
       question.options = options;
@@ -203,50 +241,101 @@ export class ExamsService {
     await this.examQuestionRepository.softRemove(question);
   }
 
-  async createExamAttempt(examId: number, studentId: number) {
-    const exam = await this.examRepository.findOne({ where: { id: examId } });
-    if (!exam) {
-      throw new NotFoundException('Exam not found');
+  async createAttemptForLiveExam(exam: ExamEntity, studentId: number) {
+    if (this.examEnded(exam)) {
+      if (!exam.enableAfterEndTime) {
+        throw new BadRequestException('Exam has ended');
+      }
+      return this.createAttemptForRegularExam(exam, studentId);
     }
-    if (exam.startsAt && exam.startsAt > new Date()) {
+    if (!this.examStarted(exam)) {
       throw new BadRequestException('Exam has not started yet');
     }
-    if (exam.endsAt && exam.endsAt < new Date()) {
-      throw new BadRequestException('Exam has ended');
-    }
-
-    const attempt = await this.examAttemptRepository.findOne({
-      where: { exam: { id: examId }, student: { id: studentId } },
+    const existingAttempt = await this.examAttemptRepository.findOne({
+      where: { exam: { id: exam.id }, student: { id: studentId } },
     });
-    if (attempt?.endsAt && attempt.endsAt < new Date()) {
-      throw new BadRequestException('You have already attempted this exam');
+    if (!existingAttempt) {
+      const newAttempt = this.examAttemptRepository.create({
+        exam: { id: exam.id },
+        student: { id: studentId },
+        endsAt: exam.endsAt,
+        choices: [],
+      });
+      return this.examAttemptRepository.save(newAttempt);
+    }
+    if (!this.attemptExpired(existingAttempt)) {
+      return existingAttempt;
     }
 
-    // if (exam.durationInMinutes) {
-    //   exam.endsAt = new Date(Date.now() + exam.durationInMinutes * 60000);
-    // }
+    await this.examAttemptRepository.softRemove(existingAttempt);
 
-    const user = await this.usersService.findOne({ id: studentId });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // create exam attempt
+    const newAttempt = this.examAttemptRepository.create({
+      exam: { id: exam.id },
+      student: { id: studentId },
+      endsAt: exam.endsAt,
+      choices: [],
+    });
+    return this.examAttemptRepository.save(newAttempt);
   }
 
-  // async updateQuestionOptions(
-  //   questionId: number,
-  //   updateExamOptionsDto: UpdateExamOptionDto[],
-  // ) {
-  //   const question = await this.examQuestionRepository.findOne({
-  //     where: { id: questionId },
-  //     relations: ['options'],
-  //   });
-  //   if (!question) {
-  //     throw new NotFoundException(`Question with id ${questionId} not found`);
-  //   }
-  //   const options = this.examOptionRepository.create(updateExamOptionsDto);
-  //   question.options = options;
-  //   return this.examQuestionRepository.save(question);
-  // }
+  async createAttemptForRegularExam(exam: ExamEntity, studentId: number) {
+    const existingAttempt = await this.examAttemptRepository.findOne({
+      where: { exam: { id: exam.id }, student: { id: studentId } },
+    });
+    if (!existingAttempt) {
+      if (!exam.durationInMinutes) {
+        throw new BadRequestException('Exam duration is required');
+      }
+      const newAttempt = this.examAttemptRepository.create({
+        exam: { id: exam.id },
+        student: { id: studentId },
+        endsAt: new Date(Date.now() + exam.durationInMinutes * 60000),
+        choices: [],
+      });
+      return this.examAttemptRepository.save(newAttempt);
+    }
+    if (!this.attemptExpired(existingAttempt)) {
+      return existingAttempt;
+    }
+    await this.examAttemptRepository.softRemove(existingAttempt);
+
+    if (exam.isAttemptedOnce) {
+      throw new BadRequestException('This Exam can only be attempted once');
+    }
+
+    if (!exam.durationInMinutes) {
+      throw new BadRequestException('Exam duration is required');
+    }
+    const newAttempt = this.examAttemptRepository.create({
+      exam: { id: exam.id },
+      student: { id: studentId },
+      endsAt: new Date(Date.now() + exam.durationInMinutes * 60000),
+      choices: [],
+    });
+    return this.examAttemptRepository.save(newAttempt);
+  }
+
+  attemptExpired(attempt: ExamAttemptEntity) {
+    return attempt.endsAt && attempt.endsAt < new Date();
+  }
+
+  async createExamAttempt(examId: number, studentId: number) {
+    const exam = await this.findOneExamById(examId);
+    if (exam.isLiveExam) {
+      return this.createAttemptForLiveExam(exam, studentId);
+    }
+    return this.createAttemptForRegularExam(exam, studentId);
+  }
+
+  examEnded(exam: ExamEntity) {
+    return exam.endsAt && exam.endsAt < new Date();
+  }
+
+  examStarted(exam: ExamEntity) {
+    return exam.startsAt && exam.startsAt > new Date();
+  }
+
+  examIsLiveNow(exam: ExamEntity) {
+    return this.examStarted(exam) && !this.examEnded(exam);
+  }
 }

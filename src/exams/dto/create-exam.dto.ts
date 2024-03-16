@@ -77,6 +77,20 @@ export class CreateExamDto {
   revealAnswersAtEnd?: boolean;
 
   @ApiProperty({
+    description: 'Is attempted once',
+    example: false,
+  })
+  @IsOptional()
+  isAttemptedOnce?: boolean;
+
+  @ApiProperty({
+    description: 'Is live exam',
+    example: true,
+  })
+  @IsNotEmpty()
+  isLiveExam: boolean;
+
+  @ApiProperty({
     description: 'Subject of the exam',
     example: 1,
   })
