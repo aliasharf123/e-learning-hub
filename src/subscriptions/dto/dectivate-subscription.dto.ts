@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 
-export class ActivateSubscriptionDto {
+export class DeactivateSubscriptionDto {
   @ApiProperty({
     example: '123e4567',
     description: 'The subscription key',
@@ -10,12 +10,4 @@ export class ActivateSubscriptionDto {
   @IsString()
   @IsNotEmpty()
   key: string;
-
-  @ApiProperty({
-    example: '1',
-    description: 'The user ID',
-  })
-  @IsString()
-  @IsNotEmpty()
-  userID: string;
 }

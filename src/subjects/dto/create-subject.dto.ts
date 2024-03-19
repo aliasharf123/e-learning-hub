@@ -17,6 +17,15 @@ export class CreateSubjectDto {
   name: string;
 
   @ApiProperty({
+    description: 'Description of the subject',
+    example: 'Mathematics subject',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({
     description: 'Grade level id',
     example: 1,
   })
