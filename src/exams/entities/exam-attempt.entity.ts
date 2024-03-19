@@ -13,7 +13,7 @@ import { ExamEntity } from './exam.entity';
 import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
 import { ExamAttemptChoiceEntity } from './exam-attempt-choice.entity';
 
-enum ExamAttemptStatus {
+export enum ExamAttemptStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   FINISHED = 'FINISHED',
 }

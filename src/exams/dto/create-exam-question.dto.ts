@@ -9,6 +9,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsPositive,
   IsString,
   MaxLength,
@@ -78,4 +79,12 @@ export class CreateExamQuestionDto {
   })
   @IsBoolean()
   active: boolean;
+
+  @ApiProperty({
+    description: 'Optional status of the question',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isOptional: boolean;
 }

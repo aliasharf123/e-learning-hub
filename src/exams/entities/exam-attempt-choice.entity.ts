@@ -2,6 +2,8 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -22,8 +24,9 @@ export class ExamAttemptChoiceEntity {
   @OneToOne(() => ExamQuestionEntity)
   question: ExamQuestionEntity;
 
-  @OneToOne(() => ExamOptionEntity)
-  choice: ExamOptionEntity;
+  @ManyToMany(() => ExamOptionEntity, (option) => option.selectedBy)
+  @JoinTable()
+  selectedOptions: ExamOptionEntity[];
 
   @CreateDateColumn()
   createdAt: Date;

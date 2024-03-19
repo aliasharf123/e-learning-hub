@@ -18,7 +18,11 @@ import { SubjectsService } from 'src/subjects/subjects.service';
 import { UpdateExamQuestionDto } from './dto/update-exam-question.dto';
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
 import { UsersService } from 'src/users/users.service';
-import { ExamAttemptEntity } from './entities/exam-attempt.entity';
+import {
+  ExamAttemptEntity,
+  ExamAttemptStatus,
+} from './entities/exam-attempt.entity';
+import { ExamAttemptChoiceEntity } from './entities/exam-attempt-choice.entity';
 
 @Injectable()
 export class ExamsService {
@@ -325,6 +329,119 @@ export class ExamsService {
       return this.createAttemptForLiveExam(exam, studentId);
     }
     return this.createAttemptForRegularExam(exam, studentId);
+  }
+
+  async findAttemptById(attemptId: number) {
+    const attempt = await this.examAttemptRepository.findOne({
+      where: { id: attemptId },
+      relations: {
+        exam: true,
+        student: true,
+      },
+      select: {
+        student: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    });
+    if (!attempt) {
+      throw new NotFoundException(`Attempt with id ${attemptId} not found`);
+    }
+    return attempt;
+  }
+
+  async findAttemptsByExamId(examId: number) {
+    await this.examExists(examId);
+    return this.examAttemptRepository.find({
+      where: { exam: { id: examId } },
+    });
+  }
+
+  async findAttemptsByStudentId(studentId: number) {
+    const student = await this.usersService.findOne({ id: studentId });
+    if (!student) {
+      throw new NotFoundException(`Student with id ${studentId} not found`);
+    }
+    return this.examAttemptRepository.find({
+      where: { student: { id: studentId } },
+    });
+  }
+
+  async submitAttemptForRegularExam(attemptId: number) {
+    const attempt = await this.examAttemptRepository.findOne({
+      where: { id: attemptId },
+      relations: {
+        exam: true,
+        choices: true,
+      },
+      select: {
+        exam: {
+          questions: true,
+        },
+      },
+    });
+
+    if (!attempt) {
+      throw new NotFoundException(`Attempt with id ${attemptId} not found`);
+    }
+
+    if (attempt.status === ExamAttemptStatus.FINISHED) {
+      throw new BadRequestException('Attempt has already been submitted');
+    }
+
+    if (!this.allRequiredQuestionsSolved(attempt)) {
+      throw new BadRequestException(
+        `You must mark all the required questions.`,
+      );
+    }
+
+    const evaluatedAttempt = this.evaluateAttemptScore(attempt);
+    return evaluatedAttempt;
+  }
+
+  allRequiredQuestionsSolved(attempt: ExamAttemptEntity) {
+    const markedQuestions = attempt.choices.map((choice) => choice.question.id);
+    const requiredQuestions = attempt.exam.questions
+      .filter((question) => !question.isOptional)
+      .map((question) => question.id);
+    return requiredQuestions.every((question) =>
+      markedQuestions.includes(question),
+    );
+  }
+
+  async evaluateAttemptScore(attempt: ExamAttemptEntity) {
+    const score = attempt.choices.reduce((acc, choice) => {
+      return acc + this.evaluateChoiceScore(choice);
+    }, 0);
+
+    attempt.score = score;
+    attempt.status = ExamAttemptStatus.FINISHED;
+    return this.examAttemptRepository.save(attempt);
+  }
+
+  evaluateChoiceScore(choice: ExamAttemptChoiceEntity): number {
+    if (choice.question.type === QuestionType.TRUE_OR_FALSE) {
+      if (choice.selectedOptions[0].correct) {
+        return choice.question.points;
+      }
+      return 0;
+    }
+    if (choice.question.type === QuestionType.MULTIPLE_CHOICE) {
+      const correctOptions = choice.question.options.filter(
+        (option) => option.correct,
+      );
+      if (
+        choice.selectedOptions.length !== correctOptions.length ||
+        !choice.selectedOptions.every((option) => option.correct)
+      ) {
+        return 0;
+      }
+      return choice.question.points;
+    }
+    return 0;
   }
 
   examEnded(exam: ExamEntity) {
