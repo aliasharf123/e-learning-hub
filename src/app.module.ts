@@ -29,8 +29,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SubjectsModule } from './subjects/subjects.module';
 import { GradeLevelsModule } from './grade-levels/grade-levels.module';
 import { LecturesModule } from './lectures/lectures.module';
-import { ExamsModule } from './exams/exams.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { PlanModule } from './plan/plan.module';
 
 @Module({
   imports: [
@@ -81,6 +81,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     }),
     UsersModule,
     FilesModule,
+    SubscriptionsModule,
     AuthModule,
     AuthFacebookModule,
     AuthGoogleModule,
@@ -92,8 +93,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     SubjectsModule,
     GradeLevelsModule,
     LecturesModule,
-    ExamsModule,
-    SubscriptionsModule,
+    PlanModule,
   ],
   providers: [
     {

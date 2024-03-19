@@ -21,10 +21,10 @@ export class ExamsController {
     return this.examsService.createExam(createExamDto);
   }
 
-  @Get()
-  findAllExams() {
-    return this.examsService.findAllExams();
-  }
+  // @Get()
+  // findAllExams() {
+  //   return this.examsService.findAllExams();
+  // }
 
   @Get(':id')
   findOneExam(@Param('id') id: string) {
