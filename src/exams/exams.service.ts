@@ -6,7 +6,7 @@ import {
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { ExamEntity } from './entities/exam.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   ExamQuestionEntity,
@@ -23,6 +23,7 @@ import {
   ExamAttemptStatus,
 } from './entities/exam-attempt.entity';
 import { ExamAttemptChoiceEntity } from './entities/exam-attempt-choice.entity';
+import { UpdateAttemptChoiceDto } from './dto/update-attempt-choices.dto';
 
 @Injectable()
 export class ExamsService {
@@ -35,6 +36,8 @@ export class ExamsService {
     private examOptionRepository: Repository<ExamOptionEntity>,
     @InjectRepository(ExamAttemptEntity)
     private examAttemptRepository: Repository<ExamAttemptEntity>,
+    @InjectRepository(ExamAttemptChoiceEntity)
+    private examAttemptChoiceRepository: Repository<ExamAttemptChoiceEntity>,
     private subjectService: SubjectsService,
     private usersService: UsersService,
   ) {}
@@ -301,11 +304,12 @@ export class ExamsService {
     if (!this.attemptExpired(existingAttempt)) {
       return existingAttempt;
     }
-    await this.examAttemptRepository.softRemove(existingAttempt);
 
     if (exam.isAttemptedOnce) {
       throw new BadRequestException('This Exam can only be attempted once');
     }
+
+    await this.examAttemptRepository.softRemove(existingAttempt);
 
     if (!exam.durationInMinutes) {
       throw new BadRequestException('Exam duration is required');
@@ -319,8 +323,8 @@ export class ExamsService {
     return this.examAttemptRepository.save(newAttempt);
   }
 
-  attemptExpired(attempt: ExamAttemptEntity) {
-    return attempt.endsAt && attempt.endsAt < new Date();
+  attemptExpired(attempt: ExamAttemptEntity): boolean {
+    return attempt.endsAt !== undefined && attempt.endsAt < new Date();
   }
 
   async createExamAttempt(examId: number, studentId: number) {
@@ -370,7 +374,7 @@ export class ExamsService {
     });
   }
 
-  async submitAttemptForRegularExam(attemptId: number) {
+  async submitAttempt(attemptId: number) {
     const attempt = await this.examAttemptRepository.findOne({
       where: { id: attemptId },
       relations: {
@@ -383,11 +387,19 @@ export class ExamsService {
         },
       },
     });
-
     if (!attempt) {
       throw new NotFoundException(`Attempt with id ${attemptId} not found`);
     }
+    if (attempt.status === ExamAttemptStatus.FINISHED) {
+      throw new BadRequestException('Attempt has already been submitted');
+    }
+    if (attempt.exam.isLiveExam) {
+      return this.submitAttemptForLiveExam(attempt);
+    }
+    return this.submitAttemptForRegularExam(attempt);
+  }
 
+  async submitAttemptForRegularExam(attempt: ExamAttemptEntity) {
     if (attempt.status === ExamAttemptStatus.FINISHED) {
       throw new BadRequestException('Attempt has already been submitted');
     }
@@ -396,6 +408,29 @@ export class ExamsService {
       throw new BadRequestException(
         `You must mark all the required questions.`,
       );
+    }
+
+    const evaluatedAttempt = this.evaluateAttemptScore(attempt);
+    return evaluatedAttempt;
+  }
+
+  async submitAttemptForLiveExam(attempt: ExamAttemptEntity) {
+    if (!this.examIsLiveNow(attempt.exam)) {
+      throw new BadRequestException('Exam has ended');
+    }
+
+    if (attempt.status === ExamAttemptStatus.FINISHED) {
+      throw new BadRequestException('Attempt has already been submitted');
+    }
+
+    // if (!this.allRequiredQuestionsSolved(attempt)) {
+    //   throw new BadRequestException(
+    //     `You must mark all the required questions.`,
+    //   );
+    // }
+
+    if (this.attemptExpired(attempt)) {
+      throw new BadRequestException('Attempt has expired');
     }
 
     const evaluatedAttempt = this.evaluateAttemptScore(attempt);
@@ -423,25 +458,86 @@ export class ExamsService {
   }
 
   evaluateChoiceScore(choice: ExamAttemptChoiceEntity): number {
-    if (choice.question.type === QuestionType.TRUE_OR_FALSE) {
-      if (choice.selectedOptions[0].correct) {
-        return choice.question.points;
-      }
-      return 0;
+    const { question, selectedOptions } = choice;
+
+    if (question.type === QuestionType.TRUE_OR_FALSE) {
+      const isCorrect = selectedOptions[0]?.correct;
+      return isCorrect ? question.points : 0;
     }
-    if (choice.question.type === QuestionType.MULTIPLE_CHOICE) {
-      const correctOptions = choice.question.options.filter(
+
+    if (question.type === QuestionType.MULTIPLE_CHOICE) {
+      const correctOptions = question.options.filter(
         (option) => option.correct,
       );
-      if (
-        choice.selectedOptions.length !== correctOptions.length ||
-        !choice.selectedOptions.every((option) => option.correct)
-      ) {
-        return 0;
-      }
-      return choice.question.points;
+      const hasCorrectOptions = selectedOptions.every(
+        (option) => option.correct,
+      );
+
+      return correctOptions.length === selectedOptions.length &&
+        hasCorrectOptions
+        ? question.points
+        : 0;
     }
+
     return 0;
+  }
+
+  async createOrUpdateExamAttemptChoice(
+    attemptId: number,
+    updateAttemptChoicesDto: UpdateAttemptChoiceDto,
+  ) {
+    const attempt = await this.examAttemptRepository.findOne({
+      where: { id: attemptId },
+      relations: {
+        exam: true,
+        choices: true,
+      },
+      select: {
+        exam: {
+          questions: true,
+        },
+      },
+    });
+    if (!attempt) {
+      throw new NotFoundException(`Attempt with id ${attemptId} not found`);
+    }
+    if (attempt.status === ExamAttemptStatus.FINISHED) {
+      throw new BadRequestException('Attempt has already been submitted');
+    }
+
+    // make sure the question exists and all the selected options are valid
+    const question = await this.examQuestionRepository.findOne({
+      where: { id: updateAttemptChoicesDto.questionId },
+    });
+    if (!question) {
+      throw new NotFoundException(
+        `Question with id ${updateAttemptChoicesDto.questionId} not found`,
+      );
+    }
+    const selectedOptions = await this.examOptionRepository.find({
+      where: {
+        id: In(updateAttemptChoicesDto.selectedOptionsIds),
+        question: { id: question.id },
+      },
+    });
+    if (
+      selectedOptions.length !==
+      updateAttemptChoicesDto.selectedOptionsIds.length
+    ) {
+      throw new BadRequestException('Invalid selected options');
+    }
+
+    await this.examAttemptChoiceRepository.softDelete({
+      attempt: { id: attemptId },
+      question: { id: question.id },
+    });
+
+    const newChoice = this.examAttemptChoiceRepository.create({
+      attempt: { id: attemptId },
+      question: { id: question.id },
+      selectedOptions,
+    });
+    return this.examAttemptChoiceRepository.save(newChoice);
   }
 
   examEnded(exam: ExamEntity) {
