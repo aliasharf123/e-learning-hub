@@ -2,6 +2,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -22,6 +23,7 @@ export class ExamAttemptChoiceEntity {
   attempt: ExamAttemptEntity;
 
   @OneToOne(() => ExamQuestionEntity)
+  @JoinColumn()
   question: ExamQuestionEntity;
 
   @ManyToMany(() => ExamOptionEntity, (option) => option.selectedBy)

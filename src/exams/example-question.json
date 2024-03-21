@@ -1,0 +1,35 @@
+{
+  "type": "multiple_choice",
+  "value": "What is the capital of France?",
+  "difficulty": "easy",
+  "multipleCorrectAnswers": false,
+  "points": 10,
+  "options": [
+    {
+      "value": "Paris",
+      "correct": true,
+      "explanation": "Paris is the capital of France",
+      "active": true
+    },
+    {
+      "value": "London",
+      "correct": false,
+      "explanation": "London is the capital of England",
+      "active": true
+    },
+    {
+      "value": "Berlin",
+      "correct": false,
+      "explanation": "Berlin is the capital of Germany",
+      "active": true
+    },
+    {
+      "value": "Madrid",
+      "correct": false,
+      "explanation": "Madrid is the capital of Spain",
+      "active": true
+    }
+  ],
+  "active": true,
+  "isOptional": false
+}

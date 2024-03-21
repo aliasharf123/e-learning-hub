@@ -111,7 +111,6 @@ export class ExamsService {
   }
 
   async softDeleteExam(id: number) {
-    // await this.examExists(id);
     const exam = await this.examRepository.findOne({
       where: { id },
       relations: {
@@ -335,12 +334,13 @@ export class ExamsService {
     return this.createAttemptForRegularExam(exam, studentId);
   }
 
-  async findAttemptById(attemptId: number) {
+  async findAttemptById(examId: number, attemptId: number) {
     const attempt = await this.examAttemptRepository.findOne({
-      where: { id: attemptId },
+      where: { id: attemptId, exam: { id: examId } },
       relations: {
         exam: true,
         student: true,
+        choices: true,
       },
       select: {
         student: {
@@ -357,7 +357,7 @@ export class ExamsService {
     return attempt;
   }
 
-  async findAttemptsByExamId(examId: number) {
+  async findAllAttemptsByExamId(examId: number) {
     await this.examExists(examId);
     return this.examAttemptRepository.find({
       where: { exam: { id: examId } },
@@ -374,17 +374,21 @@ export class ExamsService {
     });
   }
 
-  async submitAttempt(attemptId: number) {
+  async submitAttempt(exmaId: number, attemptId: number) {
     const attempt = await this.examAttemptRepository.findOne({
-      where: { id: attemptId },
+      where: { id: attemptId, exam: { id: exmaId } },
       relations: {
         exam: true,
         choices: true,
       },
       select: {
         exam: {
+          isLiveExam: true,
+          startsAt: true,
+          endsAt: true,
           questions: true,
         },
+        choices: true,
       },
     });
     if (!attempt) {
@@ -423,12 +427,6 @@ export class ExamsService {
       throw new BadRequestException('Attempt has already been submitted');
     }
 
-    // if (!this.allRequiredQuestionsSolved(attempt)) {
-    //   throw new BadRequestException(
-    //     `You must mark all the required questions.`,
-    //   );
-    // }
-
     if (this.attemptExpired(attempt)) {
       throw new BadRequestException('Attempt has expired');
     }
@@ -448,7 +446,12 @@ export class ExamsService {
   }
 
   async evaluateAttemptScore(attempt: ExamAttemptEntity) {
-    const score = attempt.choices.reduce((acc, choice) => {
+    const choices = await this.examAttemptChoiceRepository.find({
+      where: { attempt: { id: attempt.id } },
+      relations: { selectedOptions: true, question: true },
+    });
+    console.log(choices);
+    const score = choices.reduce((acc, choice) => {
       return acc + this.evaluateChoiceScore(choice);
     }, 0);
 
@@ -483,11 +486,12 @@ export class ExamsService {
   }
 
   async createOrUpdateExamAttemptChoice(
+    examId: number,
     attemptId: number,
     updateAttemptChoicesDto: UpdateAttemptChoiceDto,
   ) {
     const attempt = await this.examAttemptRepository.findOne({
-      where: { id: attemptId },
+      where: { id: attemptId, exam: { id: examId } },
       relations: {
         exam: true,
         choices: true,
@@ -496,6 +500,7 @@ export class ExamsService {
         exam: {
           questions: true,
         },
+        choices: true,
       },
     });
     if (!attempt) {
@@ -517,7 +522,7 @@ export class ExamsService {
     const selectedOptions = await this.examOptionRepository.find({
       where: {
         id: In(updateAttemptChoicesDto.selectedOptionsIds),
-        question: { id: question.id },
+        question: { id: question.id, exam: { id: examId } },
       },
     });
     if (
@@ -527,10 +532,14 @@ export class ExamsService {
       throw new BadRequestException('Invalid selected options');
     }
 
-    await this.examAttemptChoiceRepository.softDelete({
-      attempt: { id: attemptId },
-      question: { id: question.id },
+    const existingChoice = await this.examAttemptChoiceRepository.findOne({
+      where: { attempt: { id: attemptId }, question: { id: question.id } },
     });
+
+    if (existingChoice) {
+      existingChoice.selectedOptions = selectedOptions;
+      return this.examAttemptChoiceRepository.save(existingChoice);
+    }
 
     const newChoice = this.examAttemptChoiceRepository.create({
       attempt: { id: attemptId },
@@ -545,7 +554,7 @@ export class ExamsService {
   }
 
   examStarted(exam: ExamEntity) {
-    return exam.startsAt && exam.startsAt > new Date();
+    return exam.startsAt && exam.startsAt < new Date();
   }
 
   examIsLiveNow(exam: ExamEntity) {

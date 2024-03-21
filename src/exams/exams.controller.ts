@@ -12,6 +12,7 @@ import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { UpdateAttemptChoiceDto } from './dto/update-attempt-choices.dto';
 
 @ApiTags('Exams')
 @Controller('exams')
@@ -22,11 +23,6 @@ export class ExamsController {
   createExam(@Body() createExamDto: CreateExamDto) {
     return this.examsService.createExam(createExamDto);
   }
-
-  // @Get(`/subjects/:subjectId/exams/`)
-  // findAllExams(@Param('subjectId') subjectId: string) {
-  //   return this.examsService.findAllExamsbySubject(+subjectId);
-  // }
 
   @Get()
   findAllExams() {
@@ -84,5 +80,44 @@ export class ExamsController {
     @Param('questionId') questionId: string,
   ) {
     return this.examsService.softDeleteQuestion(+examId, +questionId);
+  }
+
+  @Post(':examId/attempts')
+  createExamAttempt(@Param('examId') examId: string) {
+    return this.examsService.createExamAttempt(+examId, 1);
+  }
+
+  @Get(':examId/attempts')
+  findAllAttemptsByExamId(@Param('examId') examId: string) {
+    return this.examsService.findAllAttemptsByExamId(+examId);
+  }
+
+  @Get(':examId/attempts/:attemptId')
+  findOneAttempt(
+    @Param('examId') examId: string,
+    @Param('attemptId') attemptId: string,
+  ) {
+    return this.examsService.findAttemptById(+examId, +attemptId);
+  }
+
+  @Patch(':examId/attempts/:attemptId')
+  updateAttemptChoice(
+    @Param('examId') examId: string,
+    @Param('attemptId') attemptId: string,
+    @Body() updateAttemptChoiceDto: UpdateAttemptChoiceDto,
+  ) {
+    return this.examsService.createOrUpdateExamAttemptChoice(
+      +examId,
+      +attemptId,
+      updateAttemptChoiceDto,
+    );
+  }
+
+  @Post(':examId/attempts/:attemptId/submit')
+  submitAttempt(
+    @Param('examId') examId: string,
+    @Param('attemptId') attemptId: string,
+  ) {
+    return this.examsService.submitAttempt(+examId, +attemptId);
   }
 }
