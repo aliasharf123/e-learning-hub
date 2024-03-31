@@ -8,8 +8,8 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ExamQuestionEntity } from './exam-question.entity';
-import { Exclude, Expose } from 'class-transformer';
 import { ExamAttemptChoiceEntity } from './exam-attempt-choice.entity';
+import { Expose } from 'class-transformer';
 
 @Entity('exam_option')
 export class ExamOptionEntity extends EntityRelationalHelper {
@@ -22,7 +22,7 @@ export class ExamOptionEntity extends EntityRelationalHelper {
   @Column()
   value: string;
 
-  @Exclude({ toPlainOnly: true })
+  // @Exclude({ toPlainOnly: true })
   @Expose({ groups: ['admin', 'assistant'] })
   @Column()
   correct: boolean;

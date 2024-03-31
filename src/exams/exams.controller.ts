@@ -13,11 +13,17 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { UpdateAttemptChoiceDto } from './dto/update-attempt-choices.dto';
+import { QuestionsService } from './questions.service';
+import { AttemptsService } from './attempts.service';
 
 @ApiTags('Exams')
 @Controller('exams')
 export class ExamsController {
-  constructor(private readonly examsService: ExamsService) {}
+  constructor(
+    private readonly examsService: ExamsService,
+    private readonly questionsService: QuestionsService,
+    private readonly attemtsService: AttemptsService,
+  ) {}
 
   @Post()
   createExam(@Body() createExamDto: CreateExamDto) {
@@ -49,12 +55,12 @@ export class ExamsController {
     @Param('examId') examId: string,
     @Body() questionDto: CreateExamQuestionDto,
   ) {
-    return this.examsService.createQuestion(+examId, questionDto);
+    return this.questionsService.createQuestion(+examId, questionDto);
   }
 
   @Get(':examId/questions')
   findAllQuestionsByExamId(@Param('examId') examId: string) {
-    return this.examsService.findAllQuestionsByExamId(+examId);
+    return this.questionsService.findAllQuestionsByExamId(+examId);
   }
 
   @Get(':examId/questions/:questionId')
@@ -62,7 +68,7 @@ export class ExamsController {
     @Param('examId') examId: string,
     @Param('questionId') questionId: string,
   ) {
-    return this.examsService.findQuestionById(+examId, +questionId);
+    return this.questionsService.findQuestionById(+examId, +questionId);
   }
 
   @Patch(':examId/questions/:questionId')
@@ -71,7 +77,11 @@ export class ExamsController {
     @Param('questionId') questionId: string,
     @Body() questionDto: CreateExamQuestionDto,
   ) {
-    return this.examsService.updateQuestion(+examId, +questionId, questionDto);
+    return this.questionsService.updateQuestion(
+      +examId,
+      +questionId,
+      questionDto,
+    );
   }
 
   @Delete(':examId/questions/:questionId')
@@ -79,17 +89,18 @@ export class ExamsController {
     @Param('examId') examId: string,
     @Param('questionId') questionId: string,
   ) {
-    return this.examsService.softDeleteQuestion(+examId, +questionId);
+    return this.questionsService.softDeleteQuestion(+examId, +questionId);
   }
 
   @Post(':examId/attempts')
   createExamAttempt(@Param('examId') examId: string) {
-    return this.examsService.createExamAttempt(+examId, 1);
+    // do not forget to add the actual user id
+    return this.attemtsService.create(+examId, 1);
   }
 
   @Get(':examId/attempts')
   findAllAttemptsByExamId(@Param('examId') examId: string) {
-    return this.examsService.findAllAttemptsByExamId(+examId);
+    return this.attemtsService.findManyByExamId(+examId);
   }
 
   @Get(':examId/attempts/:attemptId')
@@ -97,7 +108,7 @@ export class ExamsController {
     @Param('examId') examId: string,
     @Param('attemptId') attemptId: string,
   ) {
-    return this.examsService.findAttemptById(+examId, +attemptId);
+    return this.attemtsService.findOneById(+examId, +attemptId);
   }
 
   @Patch(':examId/attempts/:attemptId')
@@ -106,7 +117,7 @@ export class ExamsController {
     @Param('attemptId') attemptId: string,
     @Body() updateAttemptChoiceDto: UpdateAttemptChoiceDto,
   ) {
-    return this.examsService.createOrUpdateExamAttemptChoice(
+    return this.attemtsService.createOrUpdateExamAttemptChoice(
       +examId,
       +attemptId,
       updateAttemptChoiceDto,
@@ -118,6 +129,14 @@ export class ExamsController {
     @Param('examId') examId: string,
     @Param('attemptId') attemptId: string,
   ) {
-    return this.examsService.submitAttempt(+examId, +attemptId);
+    return this.attemtsService.submitAttempt(+examId, +attemptId);
+  }
+
+  @Get(':examId/attempts/:attemptId/choices')
+  findAllChoicesByAttemptId(
+    @Param('examId') examId: string,
+    @Param('attemptId') attemptId: string,
+  ) {
+    return this.attemtsService.findAllChoicesByAttemptId(+examId, +attemptId);
   }
 }

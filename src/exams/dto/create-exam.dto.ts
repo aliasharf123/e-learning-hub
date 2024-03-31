@@ -8,6 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { IsAfterField } from 'src/common/decorators/validation/is-after.validator';
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
 
 export class CreateExamDto {
@@ -51,6 +52,7 @@ export class CreateExamDto {
     example: '2024-10-20T16:00:00.000Z',
   })
   @IsOptional()
+  @IsAfterField('startsAt')
   endsAt?: Date;
 
   @ApiProperty({
