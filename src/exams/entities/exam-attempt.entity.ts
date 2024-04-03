@@ -13,7 +13,7 @@ import { ExamEntity } from './exam.entity';
 import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
 import { ExamAttemptChoiceEntity } from './exam-attempt-choice.entity';
 
-enum ExamAttemptStatus {
+export enum ExamAttemptStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   FINISHED = 'FINISHED',
 }
@@ -30,13 +30,13 @@ export class ExamAttemptEntity extends EntityRelationalHelper {
   student: UserEntity;
 
   @OneToMany(() => ExamAttemptChoiceEntity, (choice) => choice.attempt)
-  choices?: ExamAttemptChoiceEntity[];
+  choices: ExamAttemptChoiceEntity[];
 
   @Column({ default: ExamAttemptStatus.IN_PROGRESS })
   status: ExamAttemptStatus;
 
-  @Column({ nullable: true })
-  endsAt?: Date;
+  @Column()
+  endsAt: Date;
 
   @Column({ default: 0 })
   score: number;

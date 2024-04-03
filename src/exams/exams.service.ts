@@ -8,50 +8,73 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 import { ExamEntity } from './entities/exam.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ExamQuestionEntity } from './entities/exam-question.entity';
-import { CreateExamQuestionDto } from './dto/create-exam-question.dto';
-import { ExamOptionEntity } from './entities/exam-option.entity';
+
 import { SubjectsService } from 'src/subjects/subjects.service';
-import { UpdateExamQuestionDto } from './dto/update-exam-question.dto';
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
-import { UsersService } from 'src/users/users.service';
-import { ExamAttemptEntity } from './entities/exam-attempt.entity';
+// import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class ExamsService {
   constructor(
     @InjectRepository(ExamEntity)
     private examRepository: Repository<ExamEntity>,
-    @InjectRepository(ExamQuestionEntity)
-    private examQuestionRepository: Repository<ExamQuestionEntity>,
-    @InjectRepository(ExamOptionEntity)
-    private examOptionRepository: Repository<ExamOptionEntity>,
-    @InjectRepository(ExamAttemptEntity)
-    private examAttemptRepository: Repository<ExamAttemptEntity>,
+
     private subjectService: SubjectsService,
-    private usersService: UsersService,
+    // private usersService: UsersService,
   ) {}
 
-  async createExam(createExamDto: CreateExamDto) {
+  async create(createExamDto: CreateExamDto) {
     const subject = await this.subjectService.findOne({
       id: createExamDto.subjectId,
     });
+    const exam = this.examRepository.create(createExamDto);
+    exam.subject = subject;
 
     if (!subject) {
       throw new NotFoundException('Subject not found');
     }
 
-    const exam = this.examRepository.create(createExamDto);
-    exam.subject = subject;
+    if (createExamDto.startsAt && createExamDto.endsAt) {
+      this.validateExamDates(createExamDto.startsAt, createExamDto.endsAt);
+      if (createExamDto.startsAt > new Date()) {
+        exam.active = false;
+      }
+    }
+
+    if (!exam.startsAt || !exam.endsAt) {
+      throw new BadRequestException('You must Provide both start and end date');
+    }
 
     return this.examRepository.save(exam);
   }
 
-  findAllExamsbySubject(subjectId: SubjectEntity['id']) {
+  validateExamDates(startsAt: Date, endsAt: Date) {
+    if (startsAt > endsAt) {
+      throw new BadRequestException('Start date cannot be after end date');
+    }
+
+    if (startsAt < new Date()) {
+      throw new BadRequestException('Start date cannot be in the past');
+    }
+
+    if (endsAt < new Date()) {
+      throw new BadRequestException('End date cannot be in the past');
+    }
+
+    if (startsAt === endsAt) {
+      throw new BadRequestException('Start date and end date cannot be equal');
+    }
+  }
+
+  findMany() {
+    return this.examRepository.find();
+  }
+
+  findManybySubjectId(subjectId: SubjectEntity['id']) {
     return this.examRepository.find({ where: { subject: { id: subjectId } } });
   }
 
-  async findOneExamById(id: number) {
+  async findOneById(id: number) {
     const exam = await this.examRepository.findOne({ where: { id } });
     if (!exam) {
       throw new NotFoundException(`Exam with id ${id} not found`);
@@ -59,15 +82,17 @@ export class ExamsService {
     return exam;
   }
 
-  async updateExam(id: number, updateExamDto: UpdateExamDto) {
-    const exam = await this.findOneExamById(id);
+  async update(id: number, updateExamDto: UpdateExamDto) {
+    const exam = await this.findOneById(id);
     this.examRepository.merge(exam, updateExamDto);
+    if (exam.startsAt && exam.endsAt) {
+      this.validateExamDates(exam.startsAt, exam.endsAt);
+    }
     return this.examRepository.save(exam);
   }
 
-  async softDeleteExam(id: number) {
-    // await this.examExists(id);
-    const exam = await this.examRepository.findOneOrFail({
+  async softDelete(id: number) {
+    const exam = await this.examRepository.findOne({
       where: { id },
       relations: {
         questions: {
@@ -75,6 +100,10 @@ export class ExamsService {
         },
       },
     });
+
+    if (!exam) {
+      throw new NotFoundException(`Exam with id ${id} not found`);
+    }
 
     await this.examRepository.softRemove(exam);
   }
@@ -87,101 +116,17 @@ export class ExamsService {
     return exists;
   }
 
-  async createQuestion(examId: number, questionDto: CreateExamQuestionDto) {
-    await this.examExists(examId);
-    const question = this.examQuestionRepository.create(questionDto);
-    console.log(question);
-    question.examId = examId;
-
-    const options = this.examOptionRepository.create(questionDto.options);
-    question.options = options;
-    return this.examQuestionRepository.save(question);
+  examEnded(examEndDate: Date) {
+    return examEndDate < new Date();
   }
 
-  async findQuestionById(examId: number, questionId: number) {
-    await this.examExists(examId);
-    const question = await this.examQuestionRepository.findOne({
-      where: { id: questionId, examId },
-    });
-    if (!question) {
-      throw new NotFoundException(`Question with id ${questionId} not found`);
-    }
-    return question;
+  examStarted(examStartDate: Date) {
+    return examStartDate < new Date();
   }
 
-  async findAllQuestions(examId: number) {
-    await this.examExists(examId);
-    return this.examQuestionRepository.find({ where: { examId } });
+  examIsLiveNow(exam: ExamEntity) {
+    if (exam.startsAt && exam.endsAt)
+      return this.examStarted(exam.startsAt) && !this.examEnded(exam.endsAt);
+    return false;
   }
-
-  async updateQuestion(
-    examId: number,
-    questionId: number,
-    updateQuestionDto: UpdateExamQuestionDto,
-  ) {
-    await this.examExists(examId);
-    const question = await this.findQuestionById(examId, questionId);
-    this.examQuestionRepository.merge(question, updateQuestionDto);
-
-    if (updateQuestionDto.options) {
-      const options = this.examOptionRepository.create(
-        updateQuestionDto.options,
-      );
-      question.options = options;
-    }
-    return this.examQuestionRepository.save(question);
-  }
-
-  async softDeleteQuestion(examId: number, questionId: number) {
-    await this.examExists(examId);
-    const question = await this.findQuestionById(examId, questionId);
-    await this.examQuestionRepository.softRemove(question);
-  }
-
-  async createExamAttempt(examId: number, studentId: number) {
-    const exam = await this.examRepository.findOne({ where: { id: examId } });
-    if (!exam) {
-      throw new NotFoundException('Exam not found');
-    }
-    if (exam.startDate && exam.startDate > new Date()) {
-      throw new BadRequestException('Exam has not started yet');
-    }
-    if (exam.endDate && exam.endDate < new Date()) {
-      throw new BadRequestException('Exam has ended');
-    }
-
-    const attempt = await this.examAttemptRepository.findOne({
-      where: { exam: { id: examId }, student: { id: studentId } },
-    });
-    if (attempt?.endsAt && attempt.endsAt < new Date()) {
-      throw new BadRequestException('You have already attempted this exam');
-    }
-
-    // if (exam.durationInMinutes) {
-    //   exam.endsAt = new Date(Date.now() + exam.durationInMinutes * 60000);
-    // }
-
-    const user = await this.usersService.findOne({ id: studentId });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // create exam attempt
-  }
-
-  // async updateQuestionOptions(
-  //   questionId: number,
-  //   updateExamOptionsDto: UpdateExamOptionDto[],
-  // ) {
-  //   const question = await this.examQuestionRepository.findOne({
-  //     where: { id: questionId },
-  //     relations: ['options'],
-  //   });
-  //   if (!question) {
-  //     throw new NotFoundException(`Question with id ${questionId} not found`);
-  //   }
-  //   const options = this.examOptionRepository.create(updateExamOptionsDto);
-  //   question.options = options;
-  //   return this.examQuestionRepository.save(question);
-  // }
 }
