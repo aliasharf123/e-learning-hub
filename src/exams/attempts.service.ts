@@ -8,21 +8,28 @@ import { ExamAttemptChoiceEntity } from './entities/exam-attempt-choice.entity';
 import { ExamsService } from './exams.service';
 import { ExamEntity } from './entities/exam.entity';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { QuestionType } from './entities/exam-question.entity';
+import {
+  ExamQuestionEntity,
+  QuestionType,
+} from './entities/exam-question.entity';
 import { UpdateAttemptChoiceDto } from './dto/update-attempt-choices.dto';
+import { ExamOptionEntity } from './entities/exam-option.entity';
 
 export class AttemptsService {
-  examQuestionRepository: any;
   constructor(
     @InjectRepository(ExamAttemptEntity)
     private examAttemptRepository: Repository<ExamAttemptEntity>,
     @InjectRepository(ExamAttemptChoiceEntity)
     private examAttemptChoiceRepository: Repository<ExamAttemptChoiceEntity>,
+    @InjectRepository(ExamQuestionEntity)
+    private readonly examQuestionRepository: Repository<ExamQuestionEntity>,
+    @InjectRepository(ExamOptionEntity)
+    private readonly examOptionRepository: Repository<ExamOptionEntity>,
     private readonly examsService: ExamsService,
   ) {}
 
   async create(examId: number, studentId: number) {
-    const exam = await this.examsService.findOneExamById(examId);
+    const exam = await this.examsService.findOneById(examId);
     if (exam.isLiveExam) {
       return this.createForLiveExam(exam, studentId);
     }
@@ -30,13 +37,18 @@ export class AttemptsService {
   }
 
   async createForLiveExam(exam: ExamEntity, studentId: number) {
-    if (this.examsService.examEnded(exam)) {
+    if (!exam.startsAt || !exam.endsAt) {
+      throw new BadRequestException(
+        'start or end time is not specified for live exam',
+      );
+    }
+    if (this.examsService.examEnded(exam.endsAt)) {
       if (!exam.enableAfterEndTime) {
         throw new BadRequestException('Exam has ended');
       }
       return this.createForRegularExam(exam, studentId);
     }
-    if (!this.examsService.examStarted(exam)) {
+    if (!this.examsService.examStarted(exam.startsAt)) {
       throw new BadRequestException('Exam has not started yet');
     }
     const existingAttempt = await this.examAttemptRepository.findOne({
@@ -51,7 +63,7 @@ export class AttemptsService {
       });
       return this.examAttemptRepository.save(newAttempt);
     }
-    if (!this.attemptExpired(existingAttempt)) {
+    if (!this.attemptExpired(existingAttempt.endsAt)) {
       return existingAttempt;
     }
 
@@ -82,7 +94,7 @@ export class AttemptsService {
       });
       return this.examAttemptRepository.save(newAttempt);
     }
-    if (!this.attemptExpired(existingAttempt)) {
+    if (!this.attemptExpired(existingAttempt.endsAt)) {
       return existingAttempt;
     }
 
@@ -104,8 +116,8 @@ export class AttemptsService {
     return this.examAttemptRepository.save(newAttempt);
   }
 
-  attemptExpired(attempt: ExamAttemptEntity): boolean {
-    return attempt.endsAt !== undefined && attempt.endsAt < new Date();
+  attemptExpired(attemptEndDate: Date): boolean {
+    return attemptEndDate < new Date();
   }
 
   async findOneById(examId: number, attemptId: number) {
@@ -153,16 +165,24 @@ export class AttemptsService {
       where: { id: attemptId, exam: { id: exmaId } },
       relations: {
         exam: true,
-        choices: true,
+        // choices: true,
       },
+      // select: {
+      //   exam: {
+      //     isLiveExam: true,
+      //     startsAt: true,
+      //     endsAt: true,
+      //     questions: true,
+      //   },
+      //   choices: true,
+      // },
       select: {
         exam: {
+          id: true,
           isLiveExam: true,
           startsAt: true,
           endsAt: true,
-          questions: true,
         },
-        choices: true,
       },
     });
     if (!attempt) {
@@ -193,6 +213,7 @@ export class AttemptsService {
   }
 
   async submitAttemptForLiveExam(attempt: ExamAttemptEntity) {
+    console.log(attempt.exam);
     if (!this.examsService.examIsLiveNow(attempt.exam)) {
       throw new BadRequestException('Exam has ended');
     }
@@ -201,7 +222,7 @@ export class AttemptsService {
       throw new BadRequestException('Attempt has already been submitted');
     }
 
-    if (this.attemptExpired(attempt)) {
+    if (this.attemptExpired(attempt.endsAt)) {
       throw new BadRequestException('Attempt has expired');
     }
 
@@ -209,14 +230,34 @@ export class AttemptsService {
     return evaluatedAttempt;
   }
 
-  allRequiredQuestionsSolved(attempt: ExamAttemptEntity) {
-    const markedQuestions = attempt.choices.map((choice) => choice.question.id);
-    const requiredQuestions = attempt.exam.questions
-      .filter((question) => !question.isOptional)
-      .map((question) => question.id);
-    return requiredQuestions.every((question) =>
-      markedQuestions.includes(question),
+  async allRequiredQuestionsSolved(attempt: ExamAttemptEntity) {
+    const choices = await this.examAttemptChoiceRepository.find({
+      where: { attempt },
+      select: {
+        question: {
+          id: true,
+        },
+      },
+    });
+
+    const markedQuestions = choices.map((choice) => choice.question.id);
+    const requiredQuestions = await this.getRequiredQuestions(attempt.exam.id);
+    return requiredQuestions.every((question: ExamQuestionEntity) =>
+      markedQuestions.includes(question.id),
     );
+  }
+
+  async getRequiredQuestions(examId: number) {
+    const requiredQuestions = await this.examQuestionRepository.find({
+      where: {
+        examId: examId,
+        isOptional: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return requiredQuestions;
   }
 
   async evaluateAttemptScore(attempt: ExamAttemptEntity) {
@@ -224,8 +265,9 @@ export class AttemptsService {
       where: { attempt: { id: attempt.id } },
       relations: { selectedOptions: true, question: true },
     });
-    console.log(choices);
+    // console.log(choices);
     const score = choices.reduce((acc, choice) => {
+      console.log(choice.question.type);
       return acc + this.evaluateChoiceScore(choice);
     }, 0);
 
@@ -236,7 +278,9 @@ export class AttemptsService {
 
   evaluateChoiceScore(choice: ExamAttemptChoiceEntity): number {
     const { question, selectedOptions } = choice;
-
+    if (!question) {
+      return 0;
+    }
     if (question.type === QuestionType.TRUE_OR_FALSE) {
       const isCorrect = selectedOptions[0]?.correct;
       return isCorrect ? question.points : 0;
@@ -293,7 +337,7 @@ export class AttemptsService {
         `Question with id ${updateAttemptChoicesDto.questionId} not found`,
       );
     }
-    const selectedOptions = await this.examQuestionRepository.find({
+    const selectedOptions = await this.examOptionRepository.find({
       where: {
         id: In(updateAttemptChoicesDto.selectedOptionsIds),
         question: { id: question.id, exam: { id: examId } },

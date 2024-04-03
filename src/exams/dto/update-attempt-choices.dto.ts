@@ -5,17 +5,11 @@ import { IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateAttemptChoiceDto {
-  // @ApiProperty({
-  //   description: 'Id of the attempt',
-  //   example: 1,
-  // })
-  // @IsNotEmpty()
-  // attemptId: number;
-
   @ApiProperty({
     description: 'Id of the question',
     example: 1,
   })
+  @IsNotEmpty()
   questionId: ExamQuestionEntity['id'];
 
   @ApiProperty({

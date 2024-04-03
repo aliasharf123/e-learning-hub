@@ -27,27 +27,27 @@ export class ExamsController {
 
   @Post()
   createExam(@Body() createExamDto: CreateExamDto) {
-    return this.examsService.createExam(createExamDto);
+    return this.examsService.create(createExamDto);
   }
 
   @Get()
-  findAllExams() {
-    return this.examsService.findAllExams();
+  findManyExams() {
+    return this.examsService.findMany();
   }
 
   @Get(':id')
   findOneExam(@Param('id') id: string) {
-    return this.examsService.findOneExamById(+id);
+    return this.examsService.findOneById(+id);
   }
 
   @Patch(':id')
   updateExam(@Param('id') id: string, @Body() updateExamDto: UpdateExamDto) {
-    return this.examsService.updateExam(+id, updateExamDto);
+    return this.examsService.update(+id, updateExamDto);
   }
 
   @Delete(':id')
   softDeleteExam(@Param('id') id: string) {
-    return this.examsService.softDeleteExam(+id);
+    return this.examsService.softDelete(+id);
   }
 
   @Post(':examId/questions')

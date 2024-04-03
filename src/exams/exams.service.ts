@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { SubjectsService } from 'src/subjects/subjects.service';
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
-import { UsersService } from 'src/users/users.service';
+// import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class ExamsService {
@@ -20,10 +20,10 @@ export class ExamsService {
     private examRepository: Repository<ExamEntity>,
 
     private subjectService: SubjectsService,
-    private usersService: UsersService,
+    // private usersService: UsersService,
   ) {}
 
-  async createExam(createExamDto: CreateExamDto) {
+  async create(createExamDto: CreateExamDto) {
     const subject = await this.subjectService.findOne({
       id: createExamDto.subjectId,
     });
@@ -66,15 +66,15 @@ export class ExamsService {
     }
   }
 
-  findAllExams() {
+  findMany() {
     return this.examRepository.find();
   }
 
-  findAllExamsbySubject(subjectId: SubjectEntity['id']) {
+  findManybySubjectId(subjectId: SubjectEntity['id']) {
     return this.examRepository.find({ where: { subject: { id: subjectId } } });
   }
 
-  async findOneExamById(id: number) {
+  async findOneById(id: number) {
     const exam = await this.examRepository.findOne({ where: { id } });
     if (!exam) {
       throw new NotFoundException(`Exam with id ${id} not found`);
@@ -82,8 +82,8 @@ export class ExamsService {
     return exam;
   }
 
-  async updateExam(id: number, updateExamDto: UpdateExamDto) {
-    const exam = await this.findOneExamById(id);
+  async update(id: number, updateExamDto: UpdateExamDto) {
+    const exam = await this.findOneById(id);
     this.examRepository.merge(exam, updateExamDto);
     if (exam.startsAt && exam.endsAt) {
       this.validateExamDates(exam.startsAt, exam.endsAt);
@@ -91,7 +91,7 @@ export class ExamsService {
     return this.examRepository.save(exam);
   }
 
-  async softDeleteExam(id: number) {
+  async softDelete(id: number) {
     const exam = await this.examRepository.findOne({
       where: { id },
       relations: {
@@ -116,15 +116,17 @@ export class ExamsService {
     return exists;
   }
 
-  examEnded(exam: ExamEntity) {
-    return exam.endsAt && exam.endsAt < new Date();
+  examEnded(examEndDate: Date) {
+    return examEndDate < new Date();
   }
 
-  examStarted(exam: ExamEntity) {
-    return exam.startsAt && exam.startsAt < new Date();
+  examStarted(examStartDate: Date) {
+    return examStartDate < new Date();
   }
 
   examIsLiveNow(exam: ExamEntity) {
-    return this.examStarted(exam) && !this.examEnded(exam);
+    if (exam.startsAt && exam.endsAt)
+      return this.examStarted(exam.startsAt) && !this.examEnded(exam.endsAt);
+    return false;
   }
 }
