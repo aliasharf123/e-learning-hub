@@ -8,8 +8,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  OneToMany,
   ManyToMany,
+  OneToMany,
 } from 'typeorm';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
@@ -21,7 +21,6 @@ import { AuthProvidersEnum } from 'src/auth/auth-providers.enum';
 // in your project and return an ORM entity directly in response.
 import { Exclude, Expose } from 'class-transformer';
 import { User } from '../../../../domain/user';
-import { EnrollmentEntity } from 'src/subjects/entities/enrollment.entity';
 import { GradeLevelEntity } from 'src/grade-levels/entities/grade-level.entity';
 import { ExamAttemptEntity } from 'src/exams/entities/exam-attempt.entity';
 import { SubscriptionEntity } from 'src/subscriptions/entities/subscription.entity';
@@ -82,9 +81,6 @@ export class UserEntity extends EntityRelationalHelper implements User {
     eager: true,
   })
   status?: StatusEntity;
-
-  @OneToMany(() => EnrollmentEntity, (enrollment) => enrollment.student)
-  enrollments: EnrollmentEntity[];
 
   @ManyToMany(() => GradeLevelEntity, (gradeLevel) => gradeLevel.users)
   gradeLevels: GradeLevelEntity[];

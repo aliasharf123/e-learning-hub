@@ -30,10 +30,12 @@ export class ExamsController {
     return this.examsService.create(createExamDto);
   }
 
+
   @Get()
   findManyExams() {
     return this.examsService.findMany();
   }
+
 
   @Get(':id')
   findOneExam(@Param('id') id: string) {

@@ -12,11 +12,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EnrollmentEntity } from './enrollment.entity';
 import { LectureEntity } from 'src/lectures/entities/lecture.entity';
 import { FileEntity } from 'src/files/infrastructure/persistence/relational/entities/file.entity';
 import { ExamEntity } from 'src/exams/entities/exam.entity';
-import { SubscriptionEntity } from 'src/subscriptions/entities/subscription.entity';
+import { PlanEntity } from 'src/plan/entities/plan.entity';
 
 @Entity('subject')
 export class SubjectEntity extends EntityRelationalHelper {
@@ -25,6 +24,9 @@ export class SubjectEntity extends EntityRelationalHelper {
 
   @Column()
   name: string;
+
+  @Column({ nullable: true })
+  description?: string;
 
   @OneToOne(() => FileEntity, { eager: true })
   @JoinColumn()
@@ -37,17 +39,14 @@ export class SubjectEntity extends EntityRelationalHelper {
   @JoinColumn({ name: 'gradeLevelId' })
   gradeLevel: GradeLevelEntity;
 
-  @OneToMany(() => EnrollmentEntity, (enrollment) => enrollment.subject)
-  enrollments: EnrollmentEntity[];
-
   @OneToMany(() => LectureEntity, (lecture) => lecture.subject)
   lectures: LectureEntity[];
 
   @OneToMany(() => ExamEntity, (exam) => exam.subject)
   exams: ExamEntity[];
 
-  @OneToMany(() => SubscriptionEntity, (subscription) => subscription.subject)
-  subscriptions: SubscriptionEntity[];
+  @OneToMany(() => PlanEntity, (plan) => plan.subject)
+  plans: PlanEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
