@@ -1,12 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
+  IsOptional,
   IsPositive,
   IsString,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+import { IsAfterField } from 'src/common/decorators/validation/is-after.validator';
 import { SubjectEntity } from 'src/subjects/entities/subject.entity';
 
 export class CreateExamDto {
@@ -42,23 +44,53 @@ export class CreateExamDto {
     description: 'Start date and time of the exam',
     example: '2024-10-20T14:00:00.000Z',
   })
-  @IsNotEmpty()
-  startDate: Date;
+  @IsOptional()
+  startsAt?: Date;
 
   @ApiProperty({
     description: 'End date and time of the exam',
     example: '2024-10-20T16:00:00.000Z',
   })
-  @IsNotEmpty()
-  endDate: Date;
+  @IsOptional()
+  @IsAfterField('startsAt')
+  endsAt?: Date;
 
   @ApiProperty({
     description: 'Duration of the exam in minutes',
     example: 120,
   })
   @IsPositive()
-  @IsNotEmpty()
+  @Min(1)
+  @IsOptional()
   durationInMinutes: number;
+
+  @ApiProperty({
+    description: 'Enable after end time',
+    example: false,
+  })
+  @IsOptional()
+  enableAfterEndTime?: boolean;
+
+  @ApiProperty({
+    description: 'Reveal answers at end',
+    example: false,
+  })
+  @IsOptional()
+  revealAnswersAtEnd?: boolean;
+
+  @ApiProperty({
+    description: 'Is attempted once',
+    example: false,
+  })
+  @IsOptional()
+  isAttemptedOnce?: boolean;
+
+  @ApiProperty({
+    description: 'Is live exam',
+    example: true,
+  })
+  @IsNotEmpty()
+  isLiveExam: boolean;
 
   @ApiProperty({
     description: 'Subject of the exam',
@@ -67,9 +99,9 @@ export class CreateExamDto {
   @IsNotEmpty()
   subjectId: SubjectEntity['id'];
 
-  @ApiProperty({
-    description: 'Active status of the exam',
-    example: true,
-  })
-  active: boolean;
+  // @ApiProperty({
+  //   description: 'Active status of the exam',
+  //   example: true,
+  // })
+  // active: boolean;
 }

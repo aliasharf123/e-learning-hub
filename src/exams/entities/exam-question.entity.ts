@@ -44,6 +44,9 @@ export class ExamQuestionEntity extends EntityRelationalHelper {
   @Column()
   difficulty: QuestionDifficulty;
 
+  @Column({ default: false })
+  isOptional: boolean;
+
   @Column()
   multipleCorrectAnswers: boolean;
 
