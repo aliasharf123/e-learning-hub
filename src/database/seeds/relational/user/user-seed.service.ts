@@ -4,7 +4,6 @@ import { StatusEnum } from 'src/statuses/statuses.enum';
 import { Repository } from 'typeorm';
 import bcrypt from 'bcryptjs';
 import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
-import { RoleEnum } from 'src/roles/roles.enum';
 
 @Injectable()
 export class UserSeedService {
@@ -17,7 +16,7 @@ export class UserSeedService {
     const countAdmin = await this.repository.count({
       where: {
         role: {
-          id: RoleEnum.admin,
+          id: 1,
         },
       },
     });
@@ -33,7 +32,7 @@ export class UserSeedService {
           email: 'admin@example.com',
           password,
           role: {
-            id: RoleEnum.admin,
+            id: 1,
             name: 'Admin',
           },
           status: {
@@ -47,7 +46,7 @@ export class UserSeedService {
     const countUser = await this.repository.count({
       where: {
         role: {
-          id: RoleEnum.user,
+          id: 1,
         },
       },
     });
@@ -63,7 +62,7 @@ export class UserSeedService {
           email: 'john.doe@example.com',
           password,
           role: {
-            id: RoleEnum.user,
+            id: 1,
             name: 'Admin',
           },
           status: {

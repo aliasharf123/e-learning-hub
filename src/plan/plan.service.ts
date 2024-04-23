@@ -93,13 +93,9 @@ export class PlanService {
   }
 
   async softDelete(id: number): Promise<void> {
-    try {
-      const result = await this.planRepository.softDelete(id);
-      if (result.affected === 0) {
-        throw new NotFoundException('Plan not found');
-      }
-    } catch (error) {
-      throw new ForbiddenException(error.message);
+    const result = await this.planRepository.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('Plan not found');
     }
   }
 }

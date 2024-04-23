@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
-export class QueryOptionsDto {
+export class QueryOptionsSubjectDto {
   @ApiProperty({
     description: 'Search query',
     example: 'Mathematics',

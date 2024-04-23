@@ -1,6 +1,6 @@
 import { Exclude, Expose } from 'class-transformer';
 import { FileType } from 'src/files/domain/file';
-import { Role } from 'src/roles/domain/role';
+import { RoleEntity } from 'src/roles/entities/role.entity';
 import { Status } from 'src/statuses/domain/status';
 
 export class User {
@@ -23,7 +23,7 @@ export class User {
   firstName: string | null;
   lastName: string | null;
   photo?: FileType | null;
-  role?: Role | null;
+  role?: RoleEntity | null;
   status?: Status;
   createdAt: Date;
   updatedAt: Date;

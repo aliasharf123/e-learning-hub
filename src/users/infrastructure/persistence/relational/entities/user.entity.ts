@@ -11,7 +11,7 @@ import {
   ManyToMany,
   OneToMany,
 } from 'typeorm';
-import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
+import { RoleEntity } from '../../../../../roles/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
 import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
 import { EntityRelationalHelper } from 'src/utils/relational-entity-helper';
@@ -72,7 +72,7 @@ export class UserEntity extends EntityRelationalHelper implements User {
   })
   photo?: FileEntity | null;
 
-  @ManyToOne(() => RoleEntity, {
+  @ManyToOne(() => RoleEntity, (role) => role.users, {
     eager: true,
   })
   role?: RoleEntity | null;

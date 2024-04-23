@@ -6,7 +6,7 @@ import { IPaginationOptions } from 'src/utils/types/pagination-options';
 import { SubjectEntity } from './entities/subject.entity';
 import { EntityCondition } from 'src/utils/types/entity-condition.type';
 import { FindOptionsWhere, Repository } from 'typeorm';
-import { QueryOptionsDto } from './dto/query-options.dto';
+import { QueryOptionsSubjectDto } from './dto/query-options.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -31,7 +31,7 @@ export class SubjectsService {
     }: {
       paginationOptions: IPaginationOptions;
     },
-    queryOptions: QueryOptionsDto,
+    queryOptions: QueryOptionsSubjectDto,
   ) {
     return this.subjectRepository.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,

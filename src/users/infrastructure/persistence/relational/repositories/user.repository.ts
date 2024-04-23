@@ -37,7 +37,7 @@ export class UsersRelationalRepository implements UserRepository {
     const where: FindOptionsWhere<UserEntity> = {};
     if (filterOptions?.roles?.length) {
       where.role = filterOptions.roles.map((role) => ({
-        id: role.id,
+        id: role,
       }));
     }
 
@@ -52,6 +52,9 @@ export class UsersRelationalRepository implements UserRepository {
         }),
         {},
       ),
+      relations: {
+        role: true,
+      },
     });
 
     return entities.map((user) => UserMapper.toDomain(user));
@@ -60,12 +63,15 @@ export class UsersRelationalRepository implements UserRepository {
   async findOne(fields: EntityCondition<User>): Promise<NullableType<User>> {
     const entity = await this.usersRepository.findOne({
       where: fields as FindOptionsWhere<UserEntity>,
+      relations: {
+        role: true,
+      },
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
   }
 
-  async update(id: User['id'], payload: Partial<User>): Promise<User> {
+  async update(id: User['id'], payload: Partial<User>): Promise<User | null> {
     const entity = await this.usersRepository.findOne({
       where: { id: Number(id) },
     });
@@ -87,6 +93,10 @@ export class UsersRelationalRepository implements UserRepository {
   }
 
   async softDelete(id: User['id']): Promise<void> {
-    await this.usersRepository.softDelete(id);
+    const deletedUser = await this.usersRepository.softDelete(id);
+
+    if (!deletedUser.affected) {
+      throw new Error('User not found');
+    }
   }
 }
