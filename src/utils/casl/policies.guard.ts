@@ -1,14 +1,10 @@
 import { Reflector } from '@nestjs/core';
-import type { CanActivate, ExecutionContext } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
-import {
-  CHECK_POLICIES_KEY_META,
-  IS_PUBLIC_KEY_META,
-} from 'src/common/constant';
-import { CaslAbilityFactory } from './casl-ability.factory';
-import type { AppAbility } from './casl-ability.factory';
-import type { PolicyHandler } from './policy.interface';
+import { AppAbility, CaslAbilityFactory } from '.';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { UserEntity } from 'src/users/infrastructure/persistence/relational/entities/user.entity';
+import { PolicyHandler } from './policy.interface';
+import { CHECK_POLICIES_KEY_META } from 'src/common/constant';
 
 @Injectable()
 export class PoliciesGuard implements CanActivate {
@@ -17,15 +13,9 @@ export class PoliciesGuard implements CanActivate {
     private caslAbilityFactory: CaslAbilityFactory,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.get<boolean>(
-      IS_PUBLIC_KEY_META,
-      context.getHandler(),
-    );
-    await 1;
-    // if route is marked as public, allow request
-    if (isPublic) return true;
-
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     const policyHandlers =
       this.reflector.get<PolicyHandler[]>(
         CHECK_POLICIES_KEY_META,

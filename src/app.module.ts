@@ -31,6 +31,7 @@ import { GradeLevelsModule } from './grade-levels/grade-levels.module';
 import { LecturesModule } from './lectures/lectures.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { PlanModule } from './plan/plan.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { PlanModule } from './plan/plan.module';
     GradeLevelsModule,
     LecturesModule,
     PlanModule,
+    RolesModule,
   ],
   providers: [
     {

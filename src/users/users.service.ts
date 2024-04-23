@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { EntityCondition } from 'src/utils/types/entity-condition.type';
 import { IPaginationOptions } from 'src/utils/types/pagination-options';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -8,16 +13,17 @@ import { UserRepository } from './infrastructure/persistence/user.repository';
 import { DeepPartial } from 'src/utils/types/deep-partial.type';
 import { User } from './domain/user';
 import { StatusEnum } from 'src/statuses/statuses.enum';
-import { RoleEnum } from 'src/roles/roles.enum';
 import { FilesService } from 'src/files/files.service';
 import bcrypt from 'bcryptjs';
 import { AuthProvidersEnum } from 'src/auth/auth-providers.enum';
+import { RolesService } from 'src/roles/roles.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly filesService: FilesService,
+    private readonly roleService: RolesService,
   ) {}
 
   async create(createProfileDto: CreateUserDto): Promise<User> {
@@ -67,19 +73,23 @@ export class UsersService {
     }
 
     if (clonedPayload.role?.id) {
-      const roleObject = Object.values(RoleEnum).includes(
-        clonedPayload.role.id,
-      );
-      if (!roleObject) {
-        throw new HttpException(
-          {
-            status: HttpStatus.UNPROCESSABLE_ENTITY,
-            errors: {
-              role: 'roleNotExists',
-            },
-          },
-          HttpStatus.UNPROCESSABLE_ENTITY,
+      try {
+        const roleObject = await this.roleService.findOne(
+          clonedPayload.role.id,
         );
+        clonedPayload.role = roleObject;
+      } catch (err) {
+        if (err instanceof NotFoundException) {
+          throw new HttpException(
+            {
+              status: HttpStatus.UNPROCESSABLE_ENTITY,
+              errors: {
+                photo: 'roleNotExists',
+              },
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
       }
     }
 
@@ -174,19 +184,23 @@ export class UsersService {
     }
 
     if (clonedPayload.role?.id) {
-      const roleObject = Object.values(RoleEnum).includes(
-        clonedPayload.role.id,
-      );
-      if (!roleObject) {
-        throw new HttpException(
-          {
-            status: HttpStatus.UNPROCESSABLE_ENTITY,
-            errors: {
-              role: 'roleNotExists',
-            },
-          },
-          HttpStatus.UNPROCESSABLE_ENTITY,
+      try {
+        const roleObject = await this.roleService.findOne(
+          clonedPayload.role.id,
         );
+        clonedPayload.role = roleObject;
+      } catch (err) {
+        if (err instanceof NotFoundException) {
+          throw new HttpException(
+            {
+              status: HttpStatus.UNPROCESSABLE_ENTITY,
+              errors: {
+                photo: 'roleNotExists',
+              },
+            },
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
       }
     }
 

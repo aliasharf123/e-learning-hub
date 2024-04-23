@@ -16,7 +16,7 @@ import { infinityPagination } from 'src/utils/infinity-pagination';
 import { InfinityPaginationResultType } from 'src/utils/types/infinity-pagination-result.type';
 import { SubjectEntity } from './entities/subject.entity';
 import { ApiTags } from '@nestjs/swagger';
-import { QueryOptionsDto } from './dto/query-options.dto';
+import { QueryOptionsSubjectDto } from './dto/query-options.dto';
 
 @ApiTags('Subject')
 @Controller('subjects')
@@ -31,7 +31,7 @@ export class SubjectsController {
   @Get()
   async findManyWithPagination(
     @Query() query: QueryPaginationDto,
-    @Query() queryOptions: QueryOptionsDto,
+    @Query() queryOptions: QueryOptionsSubjectDto,
   ): Promise<InfinityPaginationResultType<SubjectEntity>> {
     const page = query?.page ?? 1;
     let limit = query?.limit ?? 10;
